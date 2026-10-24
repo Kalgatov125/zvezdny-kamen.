@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171a3b"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Звёздный Камень — приключение Рыбки</title>
+<title>Звёздный Камень — безопасная карта</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--bg:#11142f;--card:#20254b;--gold:#ffda75;--pink:#ff8dbc;--mint:#7bf2db;--text:#fff8ff;--muted:#b8bedb}
@@ -43,9 +43,9 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <header class="hero"><div class="brand"><div class="mascot" aria-hidden="true">🐠</div><div><div class="small">Маленькое большое приключение</div><h1>Привет, рыбка! <span>✨</span></h1><p>Твой волшебный Большой Камень</p></div></div>
 <div class="stats"><div class="stat"><b id="starsCount">0</b><span>⭐ Звёзд собрано</span></div><div class="stat"><b id="levelCount">1</b><span>👑 Уровень</span></div><div class="stat"><b id="regionCount">1/3</b><span>🗺️ Главы открыты</span></div></div>
 </header>
-<div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">✨ Глава 1: Первые шаги</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
+<div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>Две крайние точки взяты из карточек 2ГИС, но точный вход в место работы и пешеходный маршрут не подтверждены. Промежуточные звёзды расположены приблизительно, поэтому не следуй к ним напрямую.</div></div>
+<div class="callout"><span class="ico">🚧</span><div><b>Маршрут закрыт для прогулок</b><br>Переходы через улицу Карла Маркса не проверены. Игровые звёзды убраны, GPS-сбор отключён. Не используй карту для перехода дорог.</div></div>
 <div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Подбираем безопасные точки по пешеходным дорожкам</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
@@ -61,7 +61,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 'use strict';
 const $=id=>document.getElementById(id), center=[43.107826,132.34912], storageKey='fish-stars-gps-v1';
 let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
-const stars=[];
+const stars=[]; // No collectible markers while crossings are unverified
 const map=L.map('map',{zoomControl:false}).setView(center,16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 let gpsMarker=null, markers=[], userPos=null, posAccuracy=Infinity;
