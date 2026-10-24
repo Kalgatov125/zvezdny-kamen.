@@ -95,7 +95,15 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<section id="streetExplorer" style="background:#22294e;border:1px solid #7777ab;border-radius:19px;padding:15px;margin:12px 0">
+<section id="mapAudit" style="background:#22294e;border:1px solid #817aa9;border-radius:18px;padding:15px;margin:12px 0">
+<div style="color:#ffd794;font-size:12px;font-weight:800">🔍 РАЗБОР КАРТЫ · БЕЗ МАРШРУТА</div>
+<h2 style="font-size:20px;margin:5px 0">Пересечения улицы Карла Маркса</h2>
+<p class="muted">Отдельно показываем участки улицы Карла Маркса и переходы, отмеченные в OSM рядом с ней. Это помогает изучать карту, но не доказывает, что переход существует или безопасен.</p>
+<button class="primary" type="button" id="auditKarl">🔍 Изучить улицу и переходы</button>
+<button class="primary" type="button" id="clearAuditKarl">✕ Убрать отметки</button>
+<p id="auditKarlStatus" class="muted" aria-live="polite">Данные ещё не загружены.</p>
+<div id="auditKarlList" style="display:grid;gap:7px"></div>
+</section><section id="streetExplorer" style="background:#22294e;border:1px solid #7777ab;border-radius:19px;padding:15px;margin:12px 0">
 <div style="font-weight:800;color:#f9d996;font-size:12px">🏙️ ЖИВЫЕ УЛИЦЫ ГОРОДА</div>
 <h2 style="margin:5px 0;font-size:21px">Изучаем улицы Большого Камня</h2>
 <p class="muted">Названия и линии улиц загружаются из OpenStreetMap. Выбирай улицу — подсветим её на карте. <b>Подсветка не означает безопасный пешеходный маршрут.</b></p>
@@ -387,6 +395,7 @@ const explore=document.getElementById('exploreCity');if(explore)pane('city').ins
 const crossings=document.getElementById('crossingExplorer');if(crossings)pane('city').insertBefore(crossings,pane('city').firstChild);
 const layers=document.getElementById('cityLayers');if(layers)pane('city').insertBefore(layers,pane('city').firstChild);
 const streets=document.getElementById('streetExplorer');if(streets)pane('city').insertBefore(streets,pane('city').firstChild);
+const audit=document.getElementById('mapAudit');if(audit)pane('city').insertBefore(audit,pane('city').firstChild);
 if(daily)pane('home').appendChild(daily);
 if(diary)pane('home').appendChild(diary);
 if(mini)pane('games').appendChild(mini);
@@ -570,6 +579,28 @@ b.addEventListener('click',()=>{clear();let bounds=null;for(const pts of segment
 });
 if(!rows.length)status.textContent='Подписанные улицы в выбранном районе не найдены.';
 }catch(e){status.textContent='Сервис данных улиц временно недоступен. Попробуй повторить загрузку.'}
+});
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id),status=$('auditKarlStatus'),list=$('auditKarlList');
+let layer=null;
+function near(p,segments){const latScale=111195,lonScale=latScale*Math.cos(p[0]*Math.PI/180);let min=Infinity;for(const seg of segments){for(let i=1;i<seg.length;i++){let [a,b]=[seg[i-1],seg[i]];let x=(p[1]-a[1])*lonScale,y=(p[0]-a[0])*latScale,dx=(b[1]-a[1])*lonScale,dy=(b[0]-a[0])*latScale,t=Math.max(0,Math.min(1,(x*dx+y*dy)/(dx*dx+dy*dy||1)));min=Math.min(min,Math.hypot(x-t*dx,y-t*dy))}}return min}
+$('clearAuditKarl').addEventListener('click',()=>{if(layer)layer.clearLayers();list.textContent='';status.textContent='Отметки скрыты.'});
+$('auditKarl').addEventListener('click',async()=>{
+const map=window.cityExploreMap;if(typeof L==='undefined'||!map){status.textContent='Карта пока недоступна.';return}
+layer=layer||L.layerGroup().addTo(map);layer.clearLayers();list.textContent='';status.textContent='Загружаем улицу и картографические отметки переходов…';
+const query='[out:json][timeout:25];(way["highway"]["name"="улица Карла Маркса"](around:2000,43.107826,132.34912);way["highway"]["name"="Карла Маркса"](around:2000,43.107826,132.34912);node["highway"="crossing"](around:2000,43.107826,132.34912););out geom;';
+try{const res=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query})});if(!res.ok)throw Error('service');const raw=await res.json();
+const ways=(raw.elements||[]).filter(x=>x.type==='way'&&x.tags?.highway&&x.tags?.name?.includes('Карла Маркса')).map(x=>(x.geometry||[]).filter(z=>Number.isFinite(z.lat)&&Number.isFinite(z.lon)).map(z=>[z.lat,z.lon])).filter(x=>x.length>1);
+if(!ways.length){status.textContent='В данных OSM не удалось найти геометрию улицы Карла Маркса с таким названием. Переходы не сопоставлены с дорогой.';return}
+let bounds=null;for(const seg of ways){L.polyline(seg,{color:'#ffbd76',weight:7,opacity:.82}).addTo(layer);const b=L.latLngBounds(seg);bounds=bounds?bounds.extend(b):b}
+const crossings=(raw.elements||[]).filter(x=>x.type==='node'&&x.tags?.highway==='crossing'&&Number.isFinite(x.lat)&&Number.isFinite(x.lon)).map(x=>({...x,meters:near([x.lat,x.lon],ways)})).filter(x=>x.meters<35).sort((a,b)=>a.meters-b.meters);
+crossings.slice(0,20).forEach((p,i)=>{const mark=L.circleMarker([p.lat,p.lon],{radius:9,color:'#fff',weight:3,fillColor:'#7ce0d6',fillOpacity:1}).addTo(layer).bindPopup('OSM crossing — переход не проверен на местности.');const b=document.createElement('button');b.type='button';b.className='poiItem';b.textContent='🚸 Отметка '+(i+1)+' · '+Math.round(p.meters)+' м от линии улицы';b.addEventListener('click',()=>{map.setView([p.lat,p.lon],18);mark.openPopup()});list.appendChild(b)});
+status.textContent='Найдено сегментов улицы: '+ways.length+'; отметок переходов до 35 м от неё: '+crossings.length+'. Это предварительное сопоставление OSM; правильность и законность перехода не подтверждены.';
+if(bounds?.isValid())map.fitBounds(bounds.pad(.1),{maxZoom:17});
+}catch(e){status.textContent='Сейчас не удалось загрузить данные. Ничего не подтверждено.'}
 });
 })();
 </script>
