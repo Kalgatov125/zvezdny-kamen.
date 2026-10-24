@@ -45,7 +45,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">✨ Глава 1: Первые шаги</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>GPS-сбор включён. Точки вдоль предполагаемого направления к дому ещё требуют проверки проходов и переходов.</div></div>
+<div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>Две крайние точки взяты из карточек 2ГИС, но точный вход в место работы и пешеходный маршрут не подтверждены. Промежуточные звёзды расположены приблизительно, поэтому не следуй к ним напрямую.</div></div>
 <div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Собери 5 звёзд, чтобы открыть следующую главу</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
@@ -59,16 +59,17 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <script>
 (()=>{
 'use strict';
-const $=id=>document.getElementById(id), center=[43.1076,132.3477], storageKey='fish-stars-gps-v1';
+const $=id=>document.getElementById(id), center=[43.107826,132.34912], storageKey='fish-stars-gps-v1';
 let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
-const stars=[{"id":1,"pos":[43.1069,132.34495],"name":"У Чайки"},{"id":2,"pos":[43.10712,132.34548],"name":"Золотой луч"},{"id":3,"pos":[43.10738,132.34598],"name":"Добрый знак"},{"id":4,"pos":[43.1076,132.34646],"name":"Улыбка Рыбки"},{"id":5,"pos":[43.10781,132.34699],"name":"Тайная искорка"},{"id":6,"pos":[43.10799,132.34748],"name":"Маленький поворот"},{"id":7,"pos":[43.10813,132.34805],"name":"Звёздная тропа"},{"id":8,"pos":[43.10818,132.34858],"name":"Почти рядом"},{"id":9,"pos":[43.10808,132.34912],"name":"Тёплая находка"},{"id":10,"pos":[43.10797,132.34965],"name":"На пути домой"}];
+const stars=[{"id":1,"pos":[43.106975,132.345382],"name":"У Чайки"},{"id":2,"pos":[43.107253,132.346208],"name":"Первый поворот"},{"id":3,"pos":[43.107281,132.347034],"name":"Искорка"},{"id":4,"pos":[43.107619,132.34786],"name":"Улыбка Рыбки"},{"id":5,"pos":[43.107657,132.348687],"name":"Золотой свет"},{"id":6,"pos":[43.108004,132.349513],"name":"Маленькое чудо"},{"id":7,"pos":[43.108032,132.350339],"name":"Звёздная тропинка"},{"id":8,"pos":[43.10837,132.351165],"name":"На пути домой"},{"id":9,"pos":[43.108428,132.351992],"name":"Счастливое место"},{"id":10,"pos":[43.108666,132.352818],"name":"Почти дома"}];
 const map=L.map('map',{zoomControl:false}).setView(center,16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 let gpsMarker=null, markers=[], userPos=null, posAccuracy=Infinity;
 // Отмечаем подтверждённую локацию работы; координаты адреса Горького, 1 из справочника.
 // Дом отмечен приблизительно по скриншоту, без заявления точности.
-const work=[43.106837,132.344773];
-L.marker(work,{icon:L.divIcon({html:'<div style="font-size:26px">💅</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('💅 Работа: ТЦ «Чайка», Карла Маркса, 22 / Горького, 1');
+const work=[43.106837,132.344773];const home=[43.108814,132.35347];
+L.marker(work,{icon:L.divIcon({html:'<div style="font-size:26px">💅</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('💅 Точка на Горького, 1 («Чайка»). Вход в место работы ещё не подтверждён.');
+L.marker(home,{icon:L.divIcon({html:'<div style="font-size:26px">🏠</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('🏠 Приморского Комсомола, 15 — здание по карте 2ГИС');
 
 function popup(art,title,txt){$('dialogArt').textContent=art;$('dialogTitle').textContent=title;$('dialogText').textContent=txt;$('overlay').classList.add('visible');$('closeDialog').focus()}
 function close(){ $('overlay').classList.remove('visible') }
