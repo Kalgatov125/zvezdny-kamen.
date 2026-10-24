@@ -95,7 +95,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<section id="mapAudit" style="background:#22294e;border:1px solid #817aa9;border-radius:18px;padding:15px;margin:12px 0">
+<section id="walkConnectivity" style="border:1px solid #7777ab;border-radius:19px;background:#22294e;padding:15px;margin:12px 0"><div style="font-size:12px;color:#f7d491;font-weight:800">🚶 АНАЛИЗ ПЕШЕХОДНЫХ СВЯЗЕЙ</div><h2 style="font-size:20px;margin:5px 0">Дорожки возле переходов</h2><p class="muted">Сопоставляем отметки пешеходных переходов с линиями пешеходных дорожек в OpenStreetMap. Даже близкие линии <b>не доказывают, что переход доступен и безопасен</b>.</p><button type="button" id="analyzeWalkLinks" class="primary">🔍 Проверить связи на карте</button> <button type="button" id="clearWalkLinks" class="primary">✕ Очистить</button><p id="walkLinksStatus" class="muted" aria-live="polite">Анализ ещё не проводился.</p><div id="walkLinksList" style="display:grid;gap:7px"></div></section><section id="mapAudit" style="background:#22294e;border:1px solid #817aa9;border-radius:18px;padding:15px;margin:12px 0">
 <div style="color:#ffd794;font-size:12px;font-weight:800">🔍 РАЗБОР КАРТЫ · БЕЗ МАРШРУТА</div>
 <h2 style="font-size:20px;margin:5px 0">Пересечения улицы Карла Маркса</h2>
 <p class="muted">Отдельно показываем участки улицы Карла Маркса и переходы, отмеченные в OSM рядом с ней. Это помогает изучать карту, но не доказывает, что переход существует или безопасен.</p>
@@ -396,6 +396,7 @@ const crossings=document.getElementById('crossingExplorer');if(crossings)pane('c
 const layers=document.getElementById('cityLayers');if(layers)pane('city').insertBefore(layers,pane('city').firstChild);
 const streets=document.getElementById('streetExplorer');if(streets)pane('city').insertBefore(streets,pane('city').firstChild);
 const audit=document.getElementById('mapAudit');if(audit)pane('city').insertBefore(audit,pane('city').firstChild);
+const links=document.getElementById('walkConnectivity');if(links)pane('city').insertBefore(links,pane('city').firstChild);
 if(daily)pane('home').appendChild(daily);
 if(diary)pane('home').appendChild(diary);
 if(mini)pane('games').appendChild(mini);
@@ -601,6 +602,31 @@ crossings.slice(0,20).forEach((p,i)=>{const mark=L.circleMarker([p.lat,p.lon],{r
 status.textContent='Найдено сегментов улицы: '+ways.length+'; отметок переходов до 35 м от неё: '+crossings.length+'. Это предварительное сопоставление OSM; правильность и законность перехода не подтверждены.';
 if(bounds?.isValid())map.fitBounds(bounds.pad(.1),{maxZoom:17});
 }catch(e){status.textContent='Сейчас не удалось загрузить данные. Ничего не подтверждено.'}
+});
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id), msg=$('walkLinksStatus'),list=$('walkLinksList');let layer=null;
+const q='[out:json][timeout:25];(node["highway"="crossing"](around:1500,43.107826,132.34912);way["highway"~"^(footway|pedestrian|path|steps)$"](around:1500,43.107826,132.34912););out geom;';
+function dist(point,line){const cos=Math.cos(point[0]*Math.PI/180),scale=111195;let best=Infinity;for(let i=1;i<line.length;i++){const a=line[i-1],b=line[i];const x=(point[1]-a[1])*scale*cos,y=(point[0]-a[0])*scale,dx=(b[1]-a[1])*scale*cos,dy=(b[0]-a[0])*scale;const t=Math.max(0,Math.min(1,(x*dx+y*dy)/(dx*dx+dy*dy||1)));best=Math.min(best,Math.hypot(x-dx*t,y-dy*t))}return best}
+$('clearWalkLinks').addEventListener('click',()=>{if(layer)layer.clearLayers();list.textContent='';msg.textContent='Слой анализа скрыт.'});
+$('analyzeWalkLinks').addEventListener('click',async()=>{
+const map=window.cityExploreMap;if(typeof L==='undefined'||!map){msg.textContent='Карта недоступна.';return}
+layer=layer||L.layerGroup().addTo(map);layer.clearLayers();list.textContent='';msg.textContent='Загружаем пешеходные линии и переходы…';
+try{
+const response=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:q})});if(!response.ok)throw Error('network');
+const data=await response.json(),items=data.elements||[];
+const foot=items.filter(e=>e.type==='way').map(e=>({id:e.id,pts:(e.geometry||[]).map(p=>[p.lat,p.lon]).filter(p=>p.every(Number.isFinite))})).filter(e=>e.pts.length>1);
+const crossings=items.filter(e=>e.type==='node'&&e.tags?.highway==='crossing'&&Number.isFinite(e.lat)&&Number.isFinite(e.lon));
+for(const f of foot)L.polyline(f.pts,{color:'#53d7ca',weight:3,opacity:.6}).addTo(layer);
+const analyzed=crossings.map(p=>{const d=foot.map(f=>dist([p.lat,p.lon],f.pts)).sort((a,b)=>a-b);return {p,closest:d[0]??Infinity,second:d[1]??Infinity}}).sort((a,b)=>a.closest-b.closest);
+for(const [i,v] of analyzed.slice(0,40).entries()){
+const label=Number.isFinite(v.closest)?Math.round(v.closest)+' м до ближайшей линии':'рядом нет линий';
+const mark=L.circleMarker([v.p.lat,v.p.lon],{radius:8,color:'#ffffff',fillColor:v.closest<=12?'#ffcb70':'#fa8b96',fillOpacity:1}).bindPopup('Отметка OSM · '+label+'. НЕ подтверждён безопасный переход.').addTo(layer);
+const b=document.createElement('button');b.className='poiItem';b.type='button';b.textContent='🚸 Переход '+(i+1)+' · '+label;b.addEventListener('click',()=>{map.setView([v.p.lat,v.p.lon],18);mark.openPopup()});list.appendChild(b)}
+msg.textContent='OSM: '+crossings.length+' переходов, '+foot.length+' линий дорожек; '+analyzed.filter(x=>x.closest<=12).length+' отметок близко к нанесённым дорожкам. Это геометрическое сопоставление, не проверка непрерывного пути через Карла Маркса.';
+}catch(e){msg.textContent='Сервис картографических данных не ответил. Анализ не выполнен.'}
 });
 })();
 </script>
