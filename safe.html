@@ -50,6 +50,20 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 .game-welcome{padding:15px;border-radius:20px;background:linear-gradient(135deg,#41376f,#2b2e61);border:1px solid #7364aa;margin:0 0 12px}
 .game-welcome h2{margin:0 0 6px;font-size:23px}.game-welcome p{margin:0;color:#dcd5f0}
 @media(min-width:720px){.game-tabs{max-width:850px;margin:auto;border-radius:20px 20px 0 0}.tab-pane{padding:20px}}
+</style><style>
+.game-cover{position:relative;overflow:hidden;padding:20px 16px 16px;border-radius:26px;border:1px solid #8f7fbe;background:radial-gradient(circle at 70% 20%,#8069ac88,transparent 48%),linear-gradient(145deg,#473b82,#222b62 75%);margin-bottom:13px;box-shadow:inset 0 2px 0 #ffffff23}
+.game-cover:before{content:"✧　✦　⋆　✧";position:absolute;top:8px;right:12px;color:#ffd9916b;font-size:24px}
+.game-cover h2{font-size:23px;line-height:1.1;margin:0 0 6px}.game-cover p{font-size:13px;max-width:240px;color:#e3def6;margin:0 0 10px}
+.fish-scene{height:158px;position:relative;display:grid;place-items:center}
+.fish-art{width:210px;max-width:80%;height:151px;filter:drop-shadow(0 12px 12px #07102b7b);animation:fishbob 4s ease-in-out infinite}
+.bubble{position:absolute;border:2px solid #9de8ff8a;border-radius:100%;animation:bubbles 4s infinite ease-in;bottom:4px}
+.b1{left:20%;width:13px;height:13px}.b2{left:72%;width:21px;height:21px;animation-delay:-1.7s}.b3{left:80%;width:9px;height:9px;animation-delay:-2.6s}
+@keyframes fishbob{50%{transform:translateY(-9px) rotate(-3deg)}}@keyframes bubbles{to{transform:translateY(-125px);opacity:0}}
+.home-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:8px}
+.home-quick button{border:1px solid #6e6199;background:linear-gradient(135deg,#3c346c,#282950);border-radius:19px;min-height:93px;color:#f9f1ff;text-align:left;padding:14px;font-weight:800}
+.home-quick button span{font-size:28px;display:block;margin-bottom:6px}.home-quick button small{display:block;color:#c9c2e6;font-weight:500}
+.tab-pane{animation:tabshow .25s ease-out}@keyframes tabshow{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.fish-art,.bubble,.tab-pane{animation:none!important}}
 </style></head>
 <body>
 <header class="hero"><div class="brand"><div class="mascot" aria-hidden="true">🐠</div><div><div class="small">Маленькое большое приключение</div><h1>Привет, рыбка! <span>✨</span></h1><p>Твой волшебный Большой Камень</p></div></div>
@@ -111,7 +125,24 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </main>
 <nav class="bottom" style="display:none" aria-label="Старое меню"><button type="button" id="navMap"><strong>🗺️</strong>Карта</button><button type="button" id="navCollection"><strong>🎒</strong>Коллекция</button><button type="button" id="navHelp"><strong>🐠</strong>Рыбка</button></nav>
 <div id="gamePages">
-<section id="tab-home" class="tab-pane"><div class="game-welcome"><h2>✨ Приключение начинается!</h2><p>Собирай трофеи, выращивай рыбку и открывай награды. Сегодня можно играть прямо дома 🐠</p></div></section>
+<section id="tab-home" class="tab-pane"><div class="game-cover"><h2>Твой маленький мир ✨</h2><p>Здесь начинается новая история, рыбка. Сегодня тебя ждут сюрпризы!</p><div class="fish-scene">
+<span class="bubble b1"></span><span class="bubble b2"></span><span class="bubble b3"></span>
+<svg class="fish-art" viewBox="0 0 260 184" aria-label="Улыбающаяся коралловая рыбка" role="img">
+<defs><linearGradient id="bodygrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe0a3"/><stop offset=".52" stop-color="#ff9b97"/><stop offset="1" stop-color="#ef6f9c"/></linearGradient><linearGradient id="fingrad"><stop stop-color="#f988aa"/><stop offset="1" stop-color="#e65a93"/></linearGradient></defs>
+<path d="M74 95 C34 43 13 64 36 97 C11 138 48 154 81 111" fill="url(#fingrad)" stroke="#d75b8e" stroke-width="4"/>
+<path d="M119 52 Q135 12 170 51 M133 139 Q167 164 179 135" fill="#ffbc9b" stroke="#e88195" stroke-width="4"/>
+<ellipse cx="145" cy="97" rx="82" ry="64" fill="url(#bodygrad)" stroke="#e9878b" stroke-width="4"/>
+<path d="M140 115 Q177 154 197 118 Q164 142 140 115" fill="#ffdebf" opacity=".82"/>
+<ellipse cx="122" cy="84" rx="12" ry="16" fill="white"/><ellipse cx="169" cy="82" rx="12" ry="16" fill="white"/>
+<ellipse cx="125" cy="87" rx="6" ry="9" fill="#30244a"/><ellipse cx="171" cy="86" rx="6" ry="9" fill="#30244a"/>
+<circle cx="127" cy="84" r="2.2" fill="white"/><circle cx="173" cy="83" r="2.2" fill="white"/>
+<ellipse cx="112" cy="109" rx="12" ry="6" fill="#fc6d9d" opacity=".75"/><ellipse cx="192" cy="107" rx="11" ry="6" fill="#fc6d9d" opacity=".75"/>
+<path d="M141 106 Q151 119 162 105" stroke="#9d476d" stroke-width="4" fill="none" stroke-linecap="round"/>
+<path d="M105 127 Q132 148 144 132" stroke="#fa8caa" fill="none" stroke-width="3"/>
+<path d="M92 56 Q131 31 174 50" fill="none" stroke="#ffecc4" stroke-width="6" opacity=".65" stroke-linecap="round"/>
+<path d="M201 40 l4 -13 4 13 13 4 -13 4 -4 13 -4 -13 -13 -4Z" fill="#ffe8a6"/>
+</svg></div></div>
+<div class="home-quick"><button data-jump="games" type="button"><span>🐚</span>Искать сокровища<small>Мини-игра</small></button><button data-jump="pet" type="button"><span>🪸</span>Мой аквариум<small>Друзья и рыбка</small></button><button data-jump="prizes" type="button"><span>🏆</span>Зал славы<small>Коллекция наград</small></button><button data-jump="city" type="button"><span>🗺️</span>Большой Камень<small>Карта города</small></button></div></section>
 <section id="tab-city" class="tab-pane" hidden></section>
 <section id="tab-games" class="tab-pane" hidden></section>
 <section id="tab-pet" class="tab-pane" hidden></section>
@@ -288,10 +319,11 @@ const navs=Array.from(document.querySelectorAll('.game-tabs button[data-tab]'));
 function select(tab){
 for(const k of ['home','city','games','pet','prizes'])pane(k).hidden=k!==tab;
 for(const b of navs){const selected=b.dataset.tab===tab;b.classList.toggle('active',selected);b.setAttribute('aria-current',selected?'page':'false')}
-if(tab==='city'&&typeof map!=='undefined'&&map.invalidateSize){setTimeout(()=>map.invalidateSize(),100)}
+if(tab==='city'){setTimeout(()=>window.dispatchEvent(new Event('resize')),100)}
 window.scrollTo({top:0,behavior:'instant'});
 }
 navs.forEach(b=>b.addEventListener('click',()=>select(b.dataset.tab)));
+document.querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>select(b.dataset.jump)));
 document.querySelector('.hero')?.addEventListener('click',()=>{});
 select('home');
 })();
