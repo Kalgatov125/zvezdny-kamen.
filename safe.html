@@ -100,10 +100,12 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <h2 style="font-size:20px;margin:5px 0">Переходы и пешеходные дорожки</h2>
 <p class="muted">Смотрим, что нанесено в OpenStreetMap рядом с домом и работой Рыбки. Это карта объектов, <b>не подтверждение безопасности перехода</b>. Разметка могла устареть или отсутствовать.</p>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+<button class="primary" id="inspectCorridor" type="button">🔎 Участок дом — работа</button>
 <button class="primary" id="showCrossings" type="button">🚸 Найти переходы</button>
 <button class="primary" id="showFootways" type="button">🚶 Показать дорожки</button>
 <button class="primary" id="hideWalkData" type="button">✕ Убрать слои</button>
 </div>
+<p class="muted" style="margin:5px 0">🟣 Фиолетовая пунктирная линия в режиме проверки — <b>только ориентир между адресами, не маршрут</b>.</p>
 <div id="crossingStatus" class="muted" aria-live="polite">Нажми кнопку, чтобы загрузить данные.</div>
 <div id="crossingList" style="display:grid;gap:7px;margin-top:10px"></div>
 </section><section id="exploreCity" aria-label="Исследование Большого Камня">
@@ -363,6 +365,7 @@ pane('city').appendChild(m);
 const notice=content.querySelector('.callout');if(notice)pane('city').appendChild(notice);
 cityItems.forEach(el=>pane('city').appendChild(el));
 const explore=document.getElementById('exploreCity');if(explore)pane('city').insertBefore(explore,pane('city').firstChild);
+const crossings=document.getElementById('crossingExplorer');if(crossings)pane('city').insertBefore(crossings,pane('city').firstChild);
 if(daily)pane('home').appendChild(daily);
 if(diary)pane('home').appendChild(diary);
 if(mini)pane('games').appendChild(mini);
@@ -473,6 +476,33 @@ note.textContent='Отображено '+els.length+' пешеходных ли�
 $('showCrossings').addEventListener('click',()=>load('crossings'));
 $('showFootways').addEventListener('click',()=>load('walk'));
 $('hideWalkData').addEventListener('click',()=>{if(walkLayer)walkLayer.clearLayers();listing.textContent='';note.textContent='Пешеходные слои скрыты.'});
+})();
+</script>
+<script>
+(function(){
+const btn=document.getElementById('inspectCorridor'),msg=document.getElementById('crossingStatus'),list=document.getElementById('crossingList');
+let layer=null;
+const a=[43.108814,132.353470],b=[43.106837,132.344773];
+function meters(p,q){const rad=Math.PI/180,dy=(p[0]-q[0])*111195,dx=(p[1]-q[1])*111195*Math.cos((p[0]+q[0])/2*rad);return Math.hypot(dx,dy)}
+function fromSegment(p){const mid=(a[0]+b[0])/2*Math.PI/180, scaleX=111195*Math.cos(mid),scaleY=111195;const x=(p[1]-a[1])*scaleX,y=(p[0]-a[0])*scaleY,X=(b[1]-a[1])*scaleX,Y=(b[0]-a[0])*scaleY;const t=Math.max(0,Math.min(1,(x*X+y*Y)/(X*X+Y*Y)));return Math.hypot(x-X*t,y-Y*t)}
+btn.addEventListener('click',async()=>{
+const map=window.cityExploreMap;if(!map||typeof L==='undefined'){msg.textContent='Карта пока не загрузилась.';return}
+if(layer)layer.remove();layer=L.layerGroup().addTo(map);
+const line=L.polyline([a,b],{color:'#c7a1ff',weight:3,opacity:.85,dashArray:'7,10'}).bindPopup('Геометрический ориентир между адресами. Это НЕ путь для прогулки.').addTo(layer);
+const bounds=L.latLngBounds([a,b]).pad(.3);map.fitBounds(bounds,{padding:[20,20]});
+msg.textContent='Проверяем, какие переходы нанесены рядом с участком…';list.textContent='';
+const query='[out:json][timeout:22];(node["highway"="crossing"](around:900,43.107826,132.34912);node["crossing"](around:900,43.107826,132.34912););out body;';
+try{
+const rsp=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query})});if(!rsp.ok)throw Error('status');
+const data=await rsp.json(),unique=new Set(),points=[];
+for(const v of data.elements||[]){if(!Number.isFinite(v.lat)||!Number.isFinite(v.lon)||unique.has(v.id))continue;unique.add(v.id);const d=fromSegment([v.lat,v.lon]);if(d<=175)points.push({lat:v.lat,lon:v.lon,d,id:v.id})}
+points.sort((x,y)=>x.d-y.d);
+points.slice(0,25).forEach((p,i)=>{const circle=L.circleMarker([p.lat,p.lon],{radius:8,weight:2,color:'#fff',fillColor:'#ffcc67',fillOpacity:.95}).addTo(layer).bindPopup('🚸 Картографическая отметка перехода №'+(i+1)+'. Состояние и возможность безопасного перехода не проверены.');
+const button=document.createElement('button');button.type='button';button.className='poiItem';button.textContent='🚸 Отметка №'+(i+1)+' · около '+Math.round(p.d)+' м от ориентира';button.addEventListener('click',()=>{map.setView([p.lat,p.lon],18);circle.openPopup()});list.appendChild(button)});
+msg.textContent='Найдено '+points.length+' отметок переходов в пределах 175 м от прямой между адресами. Они могут относиться к другим улицам. Без проверки на местности выбирать маршрут нельзя.';
+if(!points.length)msg.textContent='На выбранном участке в OSM нет подходящих отметок. Это не означает отсутствие переходов на местности.';
+}catch(e){msg.textContent='Сервис проверки недоступен. Пунктир показывает только расположение адресов, не пешеходный путь.'}
+});
 })();
 </script>
 </body></html>
