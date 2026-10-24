@@ -85,6 +85,11 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <div style="margin-top:12px;padding:12px;border-radius:14px;background:#ffffff13">
 <b id="questRewardTitle">🎀 Награда дня</b><p class="muted" id="questRewardText" style="margin:5px 0">Выполни задания, чтобы получить особый значок.</p>
 <button type="button" class="primary" id="questClaim" style="margin:8px 0 0" disabled>🏅 Забрать награду</button></div>
+</section><section class="quest" id="achievementSection" style="display:block;margin-top:12px;background:linear-gradient(140deg,#303561,#23234b)">
+<div style="font-size:12px;color:#dfc3ff;font-weight:800;letter-spacing:1px">🏆 ЗАЛ СЛАВЫ</div><h2 style="margin:5px 0;font-size:22px">Достижения Рыбки</h2>
+<p class="muted">Пять настоящих значков за игровые успехи. Выполни условия — значки откроются сами.</p>
+<div id="achievementGrid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px" aria-live="polite"></div>
+<div id="achievementSummary" class="muted" style="margin-top:12px"></div>
 </section><div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Подбираем безопасные точки по пешеходным дорожкам</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
@@ -203,6 +208,30 @@ $('questClaim').addEventListener('click',()=>{if(checks.every(q=>q.done())&&!pro
 document.getElementById('petPlay').addEventListener('click',()=>setTimeout(render,0));
 document.getElementById('petCare').addEventListener('click',()=>setTimeout(render,0));
 document.getElementById('treasureField').addEventListener('click',()=>setTimeout(render,0));render();
+})();
+(function(){
+const $=id=>document.getElementById(id);
+const read=(k,empty)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??empty}catch(e){return empty}};
+function renderAchievements(){
+const pet=read('fish-pet-v1',{xp:0,actions:{}}), trophies=read('fish-treasure-collection-v1',[]), quest=read('fish-quests-v1',{});
+const n=Array.isArray(trophies)?trophies.length:0,xp=Number(pet.xp)||0;
+const a=[
+['🐚','Первая находка','Найти первый трофей',n>=1],
+['🎒','Коллекционер','Собрать 4 трофея',n>=4],
+['🌊','Морской хранитель','Собрать все 8 трофеев',n>=8],
+['💗','Заботливая Рыбка','Набрать 30 XP',xp>=30],
+['👑','Королева игры','Достичь 120 XP',xp>=120],
+['🏅','Победа дня','Завершить дневной квест',quest.claimed===true]
+];
+const root=$('achievementGrid');root.textContent='';let unlocked=0;
+a.forEach(([emoji,name,desc,ok])=>{if(ok)unlocked++;let card=document.createElement('div');card.style.cssText='border:1px solid #605b90;border-radius:15px;background:'+(ok?'#403964':'#252a4e')+';padding:12px;min-height:113px;opacity:'+(ok?'1':'.64');let icon=document.createElement('div');icon.style.cssText='font-size:29px;line-height:36px';icon.textContent=ok?emoji:'🔒';let h=document.createElement('div');h.style.cssText='font-size:13px;font-weight:800;margin:5px 0';h.textContent=name;let d=document.createElement('div');d.style.cssText='font-size:11px;color:#c6cae4';d.textContent=ok?'✅ Открыто':desc;card.append(icon,h,d);root.appendChild(card)});
+$('achievementSummary').textContent='Открыто '+unlocked+' из '+a.length+' достижений ✨';
+}
+['petPlay','petCare','questClaim','restartTreasure'].forEach(id=>$(id)?.addEventListener('click',()=>setTimeout(renderAchievements,0)));
+$('treasureField')?.addEventListener('click',()=>setTimeout(renderAchievements,0));
+const nav=document.querySelector('.bottom');
+const btn=document.createElement('button');btn.type='button';btn.innerHTML='<strong>🏆</strong>Награды';btn.addEventListener('click',()=>document.getElementById('achievementSection').scrollIntoView({behavior:'smooth',block:'center'}));nav.appendChild(btn);
+renderAchievements();
 })();
 </script>
 </body></html>
