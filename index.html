@@ -61,16 +61,14 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 'use strict';
 const $=id=>document.getElementById(id), center=[43.107826,132.34912], storageKey='fish-stars-gps-v1';
 let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
-const stars=[{"id":1,"pos":[43.106921,132.345019],"name":"Точка прогулки 1"},{"id":2,"pos":[43.106801,132.345576],"name":"Точка прогулки 2"},{"id":3,"pos":[43.108017,132.346856],"name":"Точка прогулки 3"},{"id":4,"pos":[43.108702,132.347587],"name":"Точка прогулки 4"},{"id":5,"pos":[43.108508,132.347938],"name":"Точка прогулки 5"},{"id":6,"pos":[43.10822,132.348946],"name":"Точка прогулки 6"},{"id":7,"pos":[43.108174,132.349482],"name":"Точка прогулки 7"},{"id":8,"pos":[43.107894,132.350421],"name":"Точка прогулки 8"},{"id":9,"pos":[43.10803,132.351758],"name":"Точка прогулки 9"},{"id":10,"pos":[43.108082,132.352488],"name":"Точка прогулки 10"}];
+const stars=[];
 const map=L.map('map',{zoomControl:false}).setView(center,16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 let gpsMarker=null, markers=[], userPos=null, posAccuracy=Infinity;
 // Отмечаем подтверждённую локацию работы; координаты адреса Горького, 1 из справочника.
 // Дом отмечен приблизительно по скриншоту, без заявления точности.
 const work=[43.106837,132.344773];const home=[43.108814,132.35347];
-const walkingTrack=[[43.106783,132.344858],[43.106853,132.344941],[43.106921,132.345019],[43.107017,132.345134],[43.106934,132.345285],[43.106801,132.345576],[43.107983,132.346821],[43.108005,132.346844],[43.108017,132.346856],[43.108488,132.347355],[43.108702,132.347587],[43.108628,132.34772],[43.108573,132.347818],[43.108508,132.347938],[43.108614,132.34806],[43.10826,132.348849],[43.10822,132.348946],[43.108237,132.348995],[43.108266,132.349022],[43.108333,132.349093],[43.108174,132.349482],[43.108079,132.349793],[43.108058,132.349863],[43.107978,132.350136],[43.107894,132.350421],[43.107878,132.350473],[43.1079,132.350831],[43.107915,132.350887],[43.107982,132.351124],[43.10803,132.351758],[43.108059,132.35191],[43.108057,132.352046],[43.108107,132.352144],[43.108215,132.352249],[43.108082,132.352488],[43.108896,132.35332]];
-const walkLayer=L.polyline(walkingTrack,{color:'#70e3c7',weight:5,opacity:.85}).addTo(map).bindPopup('Пешеходный расчёт OpenStreetMap, 914 м, около 12 минут. Переходы и реальная проходимость не проверены.');
-map.fitBounds(walkLayer.getBounds().pad(.12),{padding:[18,18]});
+map.fitBounds(L.latLngBounds([work,home]).pad(.2),{padding:[18,18]});
 
 L.marker(work,{icon:L.divIcon({html:'<div style="font-size:26px">💅</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('💅 Точка на Горького, 1 («Чайка»). Вход в место работы ещё не подтверждён.');
 L.marker(home,{icon:L.divIcon({html:'<div style="font-size:26px">🏠</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('🏠 Приморского Комсомола, 15 — здание по карте 2ГИС');
@@ -82,12 +80,12 @@ function chapter(){return collected.length>=8?3:collected.length>=5?2:1}
 function update(){
 const n=collected.length,c=chapter();
 $('starsCount').textContent=n;$('levelCount').textContent=1+Math.floor(n/3);$('regionCount').textContent=c+'/3';
-$('missionTag').textContent='Проверка пути';$('questText').textContent='10 звёзд показаны вдоль маршрута, но не доступны для сбора до проверки переходов.';
+$('missionTag').textContent='Проверка пути';$('questText').textContent='Маршрут с пересечением Карла Маркса удалён. Сначала найдём безопасный переход, затем разместим звёзды.';
 $('progressBar').style.width=Math.min(100,n*20)+'%';
 $('giftText').textContent='Твой сюрприз сохранён до открытия безопасного маршрута ❤️';
 $('region2').classList.toggle('locked',c<2);$('region2').textContent=c<2?'🔒 2. Новые горизонты':'🌅 2. Новые горизонты';
 $('region3').classList.toggle('locked',c<3);$('region3').textContent=c<3?'🔒 3. Тайны города':'💎 3. Тайны города';
-$('mapLabel').textContent='🟢 Пешеходный расчёт · 914 м';
+$('mapLabel').textContent='🚧 Маршрут временно скрыт';
 markers.forEach(m=>map.removeLayer(m));markers=[];
 for(const s of stars){if(s.id>5&&c<2||s.id>8&&c<3)continue;
 const done=collected.includes(s.id);
