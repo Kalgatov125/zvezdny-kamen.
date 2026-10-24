@@ -58,6 +58,18 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <h2 style="font-size:19px;margin:0 0 10px">🏅 Мои трофеи</h2>
 <div id="treasureAlbum" style="display:flex;gap:10px;flex-wrap:wrap;font-size:24px">🐚 🔒 🔒 🔒</div>
 <p class="muted" style="font-size:12px">За каждую партию с тремя находками Рыбка получает предмет в коллекцию.</p>
+</section><section class="quest" style="display:block;margin-top:12px;background:linear-gradient(135deg,#383568,#26294e)">
+<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#c9c8ff">🐠 НОВОЕ · АКВАРИУМ РЫБКИ</div>
+<h2 style="font-size:21px;margin:5px 0">Мои маленькие друзья</h2>
+<p class="muted">Собирай трофеи в «Рыбкиных находках», чтобы заселять аквариум.</p>
+<div id="aquarium" aria-label="Аквариум" style="min-height:160px;border-radius:21px;border:2px solid #71cde1;background:linear-gradient(#235c96,#12526f 64%,#9475a4 65%,#c1a4aa);padding:15px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px;font-size:37px;position:relative"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap"><span id="aquariumInfo" class="muted"></span><button type="button" id="aquariumFeed" class="primary" style="margin:0">🫧 Покормить</button></div>
+</section>
+<section class="quest" style="display:block;margin-top:12px">
+<h2 style="font-size:19px;margin:0 0 7px">📜 Дневник приключений</h2>
+<p class="muted" id="diaryToday">Каждая находка — маленькая история.</p>
+<button type="button" class="primary" id="dailyGift" style="margin:2px 0">💌 Открыть письмо дня</button>
+<p id="dailyGiftText" class="muted" aria-live="polite"></p>
 </section><div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Подбираем безопасные точки по пешеходным дорожкам</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
@@ -138,6 +150,16 @@ else{status.textContent='🌊 Пустая ракушка. Ищем дальше
 if(found===3){const next=icons.findIndex((x,j)=>!owned.includes(j));if(next!==-1){owned.push(next);save();renderAlbum();status.textContent='🏆 Победа! В коллекцию добавлено '+icons[next]+'! Начни новую партию.'}else status.textContent='🏆 Все трофеи собраны!';board.querySelectorAll('button').forEach(x=>x.disabled=true)}
 }
 document.getElementById('restartTreasure').addEventListener('click',newRound);renderAlbum();newRound();
+})();
+(function(){
+const $=id=>document.getElementById(id);const icons=['🐚','🪸','🦀','🐬','💎','🌸','🪷','🧜‍♀️'];
+const animals=['🐠','🐡','🦀','🐬','🦑','🪼','🐢','🧜‍♀️'];
+const wishes=['Рыбка, пусть сегодня у тебя будет повод улыбнуться. ❤️','Даже обычная дорога становится приключением, когда рядом столько чудес. ✨','Моя рыбка, ты умеешь делать мир вокруг ярче. 💛','Маленький подарок тебе от человека, который тебя очень любит. 🐠'];
+let owned=[];try{const x=JSON.parse(localStorage.getItem('fish-treasure-collection-v1')||'[]');if(Array.isArray(x))owned=x.filter(v=>Number.isInteger(v)&&v>=0&&v<8)}catch(e){}
+function render(){try{let v=JSON.parse(localStorage.getItem('fish-treasure-collection-v1')||'[]');if(Array.isArray(v))owned=v.filter(x=>Number.isInteger(x)&&x>=0&&x<8)}catch(e){}const a=$('aquarium');a.textContent='';if(!owned.length){const p=document.createElement('span');p.textContent='🫧 🪸 🫧';a.appendChild(p)}else{owned.forEach(i=>{let e=document.createElement('span');e.textContent=animals[i];e.title=icons[i]+' — житель аквариума';a.appendChild(e)})} $('aquariumInfo').textContent='Жителей: '+owned.length+' из 8';$('diaryToday').textContent=owned.length?'Ты открыла '+owned.length+' трофеев. Продолжай приключение, рыбка!':'Собери три звезды в мини-игре — откроешь первого жителя аквариума.'}
+$('aquariumFeed').addEventListener('click',()=>{render();$('aquariumInfo').textContent=owned.length?'🫧 Буль-буль! Рыбки довольны!':'🫧 Скоро здесь появится первый друг!'});
+$('dailyGift').addEventListener('click',()=>{const now=new Date();const date=now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();const n=Array.from(date).reduce((a,c)=>a+c.charCodeAt(0),0)%wishes.length;$('dailyGiftText').textContent='💌 '+wishes[n]});
+document.getElementById('restartTreasure').addEventListener('click',()=>setTimeout(render,0));document.getElementById('treasureField').addEventListener('click',()=>setTimeout(render,0));render();
 })();
 </script>
 </body></html>
