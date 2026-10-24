@@ -1,1 +1,34 @@
-<!doctype html><html lang='ru'><meta charset='utf-8'><title>Звёздный Камень</title><h1>🐠 Привет, рыбка!</h1></html>
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17203f"><title>Звёздный Камень 🐠</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101b38;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:24px 18px 14px;background:linear-gradient(140deg,#243367,#4c2c69)}h1{font-size:27px;margin:0}header p{margin:8px 0 0;color:#d9d6f5}
+nav{display:flex;gap:10px;margin-top:16px}.pill{border:1px solid #ffffff40;background:#ffffff18;border-radius:15px;padding:9px 13px;font-weight:700}
+#map{height:55vh;min-height:320px;z-index:0}.panel{padding:16px;max-width:750px;margin:auto}.btn{border:0;border-radius:16px;min-height:48px;padding:13px 17px;background:#ffd66f;color:#27213a;font-size:16px;font-weight:750;cursor:pointer}
+.btn.alt{background:#263b66;color:#fff;border:1px solid #506293}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.card{background:#1d2a4c;border:1px solid #34446d;border-radius:18px;padding:16px;margin-top:12px}.card h2{font-size:18px;margin:0 0 8px}.muted{color:#c4cbe0;font-size:14px;line-height:1.5}.notice{color:#ffdf9e}.progress{height:9px;background:#415072;border-radius:99px;overflow:hidden}.progress b{display:block;height:100%;background:#ffd66f;width:0%}.star-pin{font-size:27px;text-shadow:0 2px 5px #000}.leaflet-popup-content{color:#20263b}.leaflet-container{font-family:inherit}
+</style></head><body><header><h1>🐠 Привет, рыбка!</h1><p>Большой Камень ждёт твоих открытий ✨</p><nav><span class="pill">⭐ <span id="total">0</span> звёзд</span><span class="pill">🏅 <span id="level">1</span> уровень</span></nav></header>
+<div id="map" role="application" aria-label="Карта игрового города"></div>
+<div class="panel"><div class="actions"><button class="btn" id="gps">📍 Найти меня</button><button class="btn alt" id="home">🗺️ Весь город</button></div>
+<div class="card"><h2 id="messageTitle">🌟 Приключение начинается!</h2><p id="message" class="muted">Нажми «Найти меня», чтобы увидеть своё местоположение. Первая звёздочка пока учебная: настоящие безопасные точки мы добавим после проверки.</p></div>
+<div class="card"><h2>🔓 Исследование районов</h2><p class="muted" id="chapter">Глава 1 — Первые шаги · 0/1</p><div class="progress"><b id="bar"></b></div><p class="muted">Новые главы появятся по мере разработки. Прогресс сохраняется на этом устройстве.</p></div>
+<p class="muted notice">⚠️ Это тестовая версия с одной демонстрационной звездой, а не готовый маршрут. Не выходи на проезжую часть, не заходи в закрытые дворы и не смотри в экран на ходу. Геолокация работает только с разрешения и при открытой странице.</p></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+const center=[43.112,132.35], map=L.map('map').setView(center,14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+const $=id=>document.getElementById(id), key='zvezdny-kamen-v1-star', demo=center;
+let me=null, myMarker=null;
+const icon=L.divIcon({html:'<span class="star-pin">⭐</span>',className:'',iconSize:[32,32],iconAnchor:[16,16]});
+const star=L.marker(demo,{icon}).addTo(map).bindPopup('⭐ Демонстрационная звезда. Координаты будут уточнены.');
+function show(t,m){$('messageTitle').textContent=t;$('message').textContent=m}
+function refresh(){const count=localStorage.getItem(key)==='1'?1:0;$('total').textContent=count;$('level').textContent=count?2:1;$('chapter').textContent=count?'Глава 1 пройдена! Следующая глава в разработке.':'Глава 1 — Первые шаги · 0/1';$('bar').style.width=count?'100%':'0%'}
+function distance(a,b){const r=Math.PI/180,dlat=(b[0]-a[0])*r,dlon=(b[1]-a[1])*r,x=Math.sin(dlat/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dlon/2)**2;return 12742000*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
+$('gps').addEventListener('click',()=>{if(!navigator.geolocation){show('GPS недоступен','Браузер не поддерживает геолокацию.');return}show('📍 Определяем местоположение','Разреши доступ к геолокации в браузере.');navigator.geolocation.getCurrentPosition(p=>{me=[p.coords.latitude,p.coords.longitude];if(myMarker)map.removeLayer(myMarker);myMarker=L.circleMarker(me,{radius:10,color:'#fff',weight:3,fillColor:'#398ffb',fillOpacity:1}).addTo(map).bindPopup('Ты здесь 🐠');map.setView(me,16);show('🐠 Рыбка найдена!','Теперь можно выбрать звёздочку на карте.')},()=>show('📍 Местоположение не получено','Проверь разрешение геолокации и доступ к интернету.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
+$('home').addEventListener('click',()=>map.setView(center,14));
+star.on('click',()=>{if(localStorage.getItem(key)==='1'){show('⭐ Уже собрано!','Ты уже получила эту звёздочку.');return}if(!me){show('📍 Сначала найди себя','Нажми «Найти меня», а затем вернись к звёздочке.');return}const d=Math.round(distance(me,demo));if(d>60){show('⭐ Звезда ждёт!', 'До демонстрационной точки примерно '+d+' м. Не отправляйся к ней специально — она пока не проверена.');return}localStorage.setItem(key,'1');refresh();show('✨ Поздравляю, рыбка!','Первая звёздочка собрана! ❤️')});refresh();
+})();
+</script></body></html>
