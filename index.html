@@ -95,7 +95,16 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<section id="crossingExplorer" style="margin:12px 0;padding:15px;border:1px solid #7d78ad;border-radius:20px;background:#272c54">
+<section id="cityLayers" style="padding:14px;border:1px solid #8179ac;border-radius:18px;background:#272b50;margin:12px 0">
+<h2 style="font-size:20px;margin:0 0 6px">🧭 Исследование района</h2>
+<p class="muted">Реальные объекты из OpenStreetMap: выбирай тип мест, чтобы видеть их на карте. Не является пешеходным маршрутом.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="primary" type="button" data-layer="benches">🪑 Скамейки</button>
+<button class="primary" type="button" data-layer="playgrounds">🎠 Площадки</button>
+<button class="primary" type="button" data-layer="shops">🛍️ Магазины</button>
+<button class="primary" type="button" data-layer="water">⛲ Вода</button>
+<button class="primary" type="button" data-layer="clear">✕ Очистить</button>
+</div><p id="cityLayersStatus" class="muted" aria-live="polite" style="margin:9px 0 0">Выбери категорию объектов.</p></section><section id="crossingExplorer" style="margin:12px 0;padding:15px;border:1px solid #7d78ad;border-radius:20px;background:#272c54">
 <div style="font-size:12px;color:#ffdb96;font-weight:800">🚸 ИЗУЧАЕМ ПЕШЕХОДНУЮ СЕТЬ</div>
 <h2 style="font-size:20px;margin:5px 0">Переходы и пешеходные дорожки</h2>
 <p class="muted">Смотрим, что нанесено в OpenStreetMap рядом с домом и работой Рыбки. Это карта объектов, <b>не подтверждение безопасности перехода</b>. Разметка могла устареть или отсутствовать.</p>
@@ -366,6 +375,7 @@ const notice=content.querySelector('.callout');if(notice)pane('city').appendChil
 cityItems.forEach(el=>pane('city').appendChild(el));
 const explore=document.getElementById('exploreCity');if(explore)pane('city').insertBefore(explore,pane('city').firstChild);
 const crossings=document.getElementById('crossingExplorer');if(crossings)pane('city').insertBefore(crossings,pane('city').firstChild);
+const layers=document.getElementById('cityLayers');if(layers)pane('city').insertBefore(layers,pane('city').firstChild);
 if(daily)pane('home').appendChild(daily);
 if(diary)pane('home').appendChild(diary);
 if(mini)pane('games').appendChild(mini);
@@ -508,6 +518,21 @@ msg.textContent='Найдено '+points.length+' отметок переход�
 if(!points.length)msg.textContent='На выбранном участке в OSM нет подходящих отметок. Это не означает отсутствие переходов на местности.';
 }catch(e){msg.textContent='Сервис проверки недоступен. Пунктир показывает только расположение адресов, не пешеходный путь.'}
 });
+})();
+</script>
+<script>
+(function(){
+const msg=document.getElementById('cityLayersStatus');let layer=null;
+const q={benches:'node["amenity"="bench"]',playgrounds:'nwr["leisure"="playground"]',shops:'nwr["shop"]',water:'nwr["amenity"~"^(drinking_water|fountain)$"]'};
+const icons={benches:'🪑',playgrounds:'🎠',shops:'🛍️',water:'⛲'};
+function init(){if(typeof L==='undefined'||!window.cityExploreMap){msg.textContent='Карта пока не доступна.';return false}if(!layer)layer=L.layerGroup().addTo(window.cityExploreMap);return true}
+async function load(kind){if(!init())return;layer.clearLayers();if(kind==='clear'){msg.textContent='Слой скрыт.';return}msg.textContent='Загружаем реальные объекты…';
+const query='[out:json][timeout:20];('+q[kind]+'(around:1850,43.107826,132.34912););out center;';
+try{const rsp=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query})});if(!rsp.ok)throw Error('bad response');const data=await rsp.json();let n=0;
+for(const o of (data.elements||[]).slice(0,150)){const lat=o.lat??o.center?.lat,lon=o.lon??o.center?.lon;if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;const name=o.tags?.name||({benches:'Скамейка',playgrounds:'Детская площадка',shops:'Магазин',water:'Источник воды'}[kind]);L.circleMarker([lat,lon],{radius:7,color:'#fff4cd',weight:2,fillColor:'#d4a2ff',fillOpacity:.9}).addTo(layer).bindPopup(icons[kind]+' '+name+'<br>Данные OpenStreetMap. Доступность на местности не проверена.');n++}
+msg.textContent='На карте отмечено '+n+' объектов. Это справочные точки, их доступность и актуальность не подтверждены.';}
+catch(e){msg.textContent='Не удалось получить объекты. Повтори запрос позже.'}}
+document.querySelectorAll('#cityLayers [data-layer]').forEach(b=>b.addEventListener('click',()=>load(b.dataset.layer)));
 })();
 </script>
 </body></html>
