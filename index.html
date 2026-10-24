@@ -46,7 +46,19 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
 <div class="callout"><span class="ico">🚧</span><div><b>Маршрут закрыт для прогулок</b><br>Переходы через улицу Карла Маркса не проверены. Игровые звёзды убраны, GPS-сбор отключён. Не используй карту для перехода дорог.</div></div>
-<div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
+<section class="quest" id="miniGame" style="display:block;margin-top:15px;border-color:#b28adb;background:linear-gradient(135deg,#42376c,#25264d)">
+<div style="font-size:12px;letter-spacing:1px;color:#e9c6ff;font-weight:800">🎮 НОВОЕ ПРИКЛЮЧЕНИЕ</div>
+<h2 style="font-size:22px;margin:5px 0 4px">🐠 Рыбкины находки</h2>
+<p class="muted" style="margin:2px 0 12px">Пока создаём безопасную прогулку, сыграй в мини-игру. Никакого GPS и опасных переходов!</p>
+<div id="treasureField" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0"></div>
+<p id="treasureStatus" style="font-size:13px;color:#ffe6ab"></p>
+<button type="button" class="primary" id="restartTreasure">🎲 Новая партия</button>
+</section>
+<section class="quest" style="display:block;margin-top:12px">
+<h2 style="font-size:19px;margin:0 0 10px">🏅 Мои трофеи</h2>
+<div id="treasureAlbum" style="display:flex;gap:10px;flex-wrap:wrap;font-size:24px">🐚 🔒 🔒 🔒</div>
+<p class="muted" style="font-size:12px">За каждую партию с тремя находками Рыбка получает предмет в коллекцию.</p>
+</section><div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Подбираем безопасные точки по пешеходным дорожкам</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
 <div class="heading"><h2>🗺️ Карта приключений</h2><span>3 главы</span></div>
@@ -108,6 +120,24 @@ $('navMap').addEventListener('click',()=>document.querySelector('.map-wrap').scr
 $('navCollection').addEventListener('click',()=>popup('🎒','Твоя коллекция',collected.length?'Ты собрала '+collected.length+' из 10 звёзд! '+stars.filter(s=>collected.includes(s.id)).map(s=>s.name).join(' · '):'Пока здесь пусто. Нажми на первую звёздочку на карте!'));
 $('navHelp').addEventListener('click',()=>popup('🐠','Привет, рыбка!','Разреши GPS и собирай звёзды, подойдя примерно на 55 м. Пока точки предварительные: не пересекай дорогу в неположенном месте. Точность маршрута ещё проверяется.'));
 update();
+})();
+
+(function(){
+const store='fish-treasure-collection-v1', board=document.getElementById('treasureField'),status=document.getElementById('treasureStatus'),album=document.getElementById('treasureAlbum');
+const icons=['🐚','🪸','🦀','🐬','💎','🌸','🪷','🧜‍♀️'];
+let owned=[], round=[], opened=new Set();
+try{owned=JSON.parse(localStorage.getItem(store)||'[]');if(!Array.isArray(owned))owned=[];}catch(e){owned=[]}
+function save(){try{localStorage.setItem(store,JSON.stringify(owned))}catch(e){}}
+function renderAlbum(){album.textContent='';for(let i=0;i<icons.length;i++){let b=document.createElement('span');b.textContent=owned.includes(i)?icons[i]:'🔒';b.title=owned.includes(i)?'Найдено':'Ещё не найдено';album.appendChild(b)}}
+function newRound(){opened=new Set();round=Array.from({length:9},(_,i)=>i<3?'⭐':i===3?'🎁':'🌊').sort(()=>Math.random()-.5);renderBoard();status.textContent='Отыщи 3 звёздочки среди 9 ракушек!';}
+function renderBoard(){board.textContent='';round.forEach((v,i)=>{const b=document.createElement('button');b.type='button';b.style.cssText='font-size:30px;min-height:72px;border-radius:15px;border:1px solid #8270ae;background:#302e62;color:#fff';b.textContent=opened.has(i)?v:'🐚';b.setAttribute('aria-label','Ракушка '+(i+1));b.disabled=opened.has(i);b.addEventListener('click',()=>reveal(i));board.appendChild(b)})}
+function reveal(i){if(opened.has(i))return;opened.add(i);renderBoard();const found=Array.from(opened).filter(x=>round[x]==='⭐').length;
+if(round[i]==='🎁'){status.textContent='💌 Секрет: Рыбка, я тебя люблю! ❤️';}
+else if(round[i]==='⭐'){status.textContent='⭐ Найдено звёзд: '+found+' из 3';}
+else{status.textContent='🌊 Пустая ракушка. Ищем дальше!'}
+if(found===3){const next=icons.findIndex((x,j)=>!owned.includes(j));if(next!==-1){owned.push(next);save();renderAlbum();status.textContent='🏆 Победа! В коллекцию добавлено '+icons[next]+'! Начни новую партию.'}else status.textContent='🏆 Все трофеи собраны!';board.querySelectorAll('button').forEach(x=>x.disabled=true)}
+}
+document.getElementById('restartTreasure').addEventListener('click',newRound);renderAlbum();newRound();
 })();
 </script>
 </body></html>
