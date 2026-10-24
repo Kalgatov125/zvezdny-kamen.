@@ -68,6 +68,10 @@ let gpsMarker=null, markers=[], userPos=null, posAccuracy=Infinity;
 // Отмечаем подтверждённую локацию работы; координаты адреса Горького, 1 из справочника.
 // Дом отмечен приблизительно по скриншоту, без заявления точности.
 const work=[43.106837,132.344773];const home=[43.108814,132.35347];
+const referenceLine=L.polyline([work,home],{color:'#f8cc73',weight:4,opacity:.85,dashArray:'7 11'}).addTo(map);
+referenceLine.bindTooltip('Направление между зданиями — НЕ пешеходный маршрут');
+map.fitBounds(L.latLngBounds([work,home]).pad(.20),{padding:[18,18]});
+
 L.marker(work,{icon:L.divIcon({html:'<div style="font-size:26px">💅</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('💅 Точка на Горького, 1 («Чайка»). Вход в место работы ещё не подтверждён.');
 L.marker(home,{icon:L.divIcon({html:'<div style="font-size:26px">🏠</div>',className:'',iconSize:[32,32]})}).addTo(map).bindPopup('🏠 Приморского Комсомола, 15 — здание по карте 2ГИС');
 
@@ -92,7 +96,7 @@ const m=L.marker(s.pos,{icon}).addTo(map);
 m.on('click',()=>collect(s));markers.push(m)}
 }
 function distance(a,b){const r=Math.PI/180,dLat=(b[0]-a[0])*r,dLon=(b[1]-a[1])*r,t=Math.sin(dLat/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLon/2)**2;return 12742000*Math.atan2(Math.sqrt(t),Math.sqrt(1-t))}
-function collect(s){if(!userPos){popup('📍','Сначала включи GPS','Нажми кнопку 📍 на карте, разреши геолокацию и затем выбери звезду.');return}if(posAccuracy>75){popup('🛰️','Слабый сигнал GPS','Погрешность '+Math.round(posAccuracy)+' м. Для сбора нужна точность лучше 75 м. Попробуй на открытом месте.');return}const meters=Math.round(distance(userPos,s.pos));if(meters>55){popup('⭐','Звезда ещё далеко','До точки примерно '+meters+' м. Звёзды отмечены предварительно: не заходи ради них на проезжую часть или закрытую территорию.');return}if(collected.includes(s.id)){popup('✅','Уже в коллекции!',s.name+' уже твоя.');return}
+function collect(s){if(!userPos){popup('⭐ '+s.name,'Тестовая звезда','Для просмотра маршрута GPS не нужен. Для реального сбора Рыбка сможет включить GPS позже. Расположение точки ещё не проверено по тротуарам.');return}if(posAccuracy>75){popup('🛰️','Слабый сигнал GPS','Погрешность '+Math.round(posAccuracy)+' м. Для сбора нужна точность лучше 75 м. Попробуй на открытом месте.');return}const meters=Math.round(distance(userPos,s.pos));if(meters>55){popup('⭐','Звезда ещё далеко','До точки примерно '+meters+' м. Звёзды отмечены предварительно: не заходи ради них на проезжую часть или закрытую территорию.');return}if(collected.includes(s.id)){popup('✅','Уже в коллекции!',s.name+' уже твоя.');return}
 const before=chapter();collected.push(s.id);try{localStorage.setItem(storageKey,JSON.stringify(collected))}catch(e){}
 update();
 if(collected.length===3)popup('💌','Для моей рыбки','Ты уже нашла три звёздочки! ❤️ Я очень тебя люблю. Пусть этот город каждый день дарит тебе новые улыбки.');
@@ -100,7 +104,7 @@ else if(chapter()>before)popup('🎉','Новая глава открыта!','�
 else popup('🌟','Звезда собрана!','«'+s.name+'» теперь в твоей коллекции. '+collected.length+' из 10!')}
 $('locate').addEventListener('click',()=>{if(!navigator.geolocation){popup('📍','GPS недоступен','Этот браузер не поддерживает определение местоположения.');return}
 navigator.geolocation.getCurrentPosition(p=>{const pos=[p.coords.latitude,p.coords.longitude];userPos=pos;posAccuracy=p.coords.accuracy;if(gpsMarker)map.removeLayer(gpsMarker);gpsMarker=L.circleMarker(pos,{radius:9,color:'white',weight:3,fillColor:'#39a7ff',fillOpacity:1}).addTo(map).bindPopup('Ты здесь, рыбка 🐠');map.setView(pos,16);popup('📍','Рыбка найдена!','Синяя точка на карте — твоё местоположение. Нажми звёздочку на карте, находясь не дальше 55 м от неё (при точности GPS до 75 м).')},()=>popup('📍','Не удалось найти тебя','Разреши геолокацию для сайта в настройках браузера.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
-$('resetView').addEventListener('click',()=>map.setView(center,16));
+$('resetView').addEventListener('click',()=>map.fitBounds(L.latLngBounds([work,home]).pad(.20),{padding:[18,18]}));
 $('navMap').addEventListener('click',()=>document.querySelector('.map-wrap').scrollIntoView({behavior:'smooth'}));
 $('navCollection').addEventListener('click',()=>popup('🎒','Твоя коллекция',collected.length?'Ты собрала '+collected.length+' из 10 звёзд! '+stars.filter(s=>collected.includes(s.id)).map(s=>s.name).join(' · '):'Пока здесь пусто. Нажми на первую звёздочку на карте!'));
 $('navHelp').addEventListener('click',()=>popup('🐠','Привет, рыбка!','Разреши GPS и собирай звёзды, подойдя примерно на 55 м. Пока точки предварительные: не пересекай дорогу в неположенном месте. Точность маршрута ещё проверяется.'));
