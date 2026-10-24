@@ -95,7 +95,18 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<section id="exploreCity" aria-label="Исследование Большого Камня">
+<section id="crossingExplorer" style="margin:12px 0;padding:15px;border:1px solid #7d78ad;border-radius:20px;background:#272c54">
+<div style="font-size:12px;color:#ffdb96;font-weight:800">🚸 ИЗУЧАЕМ ПЕШЕХОДНУЮ СЕТЬ</div>
+<h2 style="font-size:20px;margin:5px 0">Переходы и пешеходные дорожки</h2>
+<p class="muted">Смотрим, что нанесено в OpenStreetMap рядом с домом и работой Рыбки. Это карта объектов, <b>не подтверждение безопасности перехода</b>. Разметка могла устареть или отсутствовать.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+<button class="primary" id="showCrossings" type="button">🚸 Найти переходы</button>
+<button class="primary" id="showFootways" type="button">🚶 Показать дорожки</button>
+<button class="primary" id="hideWalkData" type="button">✕ Убрать слои</button>
+</div>
+<div id="crossingStatus" class="muted" aria-live="polite">Нажми кнопку, чтобы загрузить данные.</div>
+<div id="crossingList" style="display:grid;gap:7px;margin-top:10px"></div>
+</section><section id="exploreCity" aria-label="Исследование Большого Камня">
 <div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#f7cc90">🗺️ РЕАЛЬНАЯ КАРТА · ИЗУЧАЕМ ГОРОД</div>
 <h2>Открывай Большой Камень</h2>
 <p class="muted">Выбирай интересные места на настоящей карте OpenStreetMap. Нажми название, чтобы увидеть точку. Это <b>справочник, не маршрут</b>: пешая доступность и переходы не проверены.</p>
@@ -430,6 +441,38 @@ if(!subset.length&&pois.length){const empty=document.createElement('p');empty.cl
 document.querySelectorAll('#poiButtons button').forEach(b=>b.addEventListener('click',()=>{kind=b.dataset.poi;document.querySelectorAll('#poiButtons button').forEach(x=>x.classList.toggle('selected',x===b));render()}));
 $('reloadPois').addEventListener('click',load);
 setTimeout(()=>{if(window.cityExploreMap&&typeof L!=='undefined')markerLayer=L.layerGroup().addTo(window.cityExploreMap);load()},450);
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const center=[43.107826,132.34912], m=window.cityExploreMap;
+let walkLayer=null,selected=null;
+const note=$('crossingStatus'),listing=$('crossingList');
+function init(){if(typeof L==='undefined'||!window.cityExploreMap)return false;if(!walkLayer)walkLayer=L.layerGroup().addTo(window.cityExploreMap);return true}
+const qs={crossings:'[out:json][timeout:22];(node["highway"="crossing"](around:1900,43.107826,132.34912);node["crossing"](around:1900,43.107826,132.34912););out body;',walk:'[out:json][timeout:22];(way["highway"~"^(footway|pedestrian|path|steps)$"](around:1700,43.107826,132.34912););out geom;'};
+async function load(which){
+if(!init()){note.textContent='Карта не загрузилась. Попробуй обновить страницу.';return}
+walkLayer.clearLayers();listing.textContent='';note.textContent='Получаем картографические данные…';
+try{
+const response=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:qs[which]}),signal:AbortSignal.timeout?AbortSignal.timeout(28000):undefined});
+if(!response.ok)throw new Error('overpass');
+const data=await response.json();const rows=data.elements||[],seen=new Set(),els=[];
+if(which==='crossings'){
+for(const o of rows){if(!Number.isFinite(o.lat)||!Number.isFinite(o.lon)||seen.has(o.id))continue;seen.add(o.id);els.push(o);
+const layer=L.circleMarker([o.lat,o.lon],{radius:8,color:'#342b5b',weight:3,fillColor:'#ffe0a2',fillOpacity:.96});
+layer.bindPopup('🚸 Переход обозначен в OSM. Наличие, состояние и пригодность для перехода <b>не проверены</b>.');
+walkLayer.addLayer(layer)}
+note.textContent='На карте отмечено '+els.length+' объектов с тегами перехода из OSM. Это НЕ разрешение переходить дорогу.';
+els.slice(0,14).forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='poiItem';b.textContent='🚸 Объект перехода № '+(i+1)+' · показать';b.addEventListener('click',()=>{window.cityExploreMap.setView([o.lat,o.lon],18);note.textContent='Переход из OSM № '+(i+1)+'. Сверь с реальными знаками, разметкой и светофором на месте.'});listing.appendChild(b)});
+}else{
+for(const o of rows){const positions=(o.geometry||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)).map(p=>[p.lat,p.lon]);if(positions.length<2)continue;els.push(o);walkLayer.addLayer(L.polyline(positions,{color:'#69e2d1',weight:4,opacity:.82}))}
+note.textContent='Отображено '+els.length+' пешеходных линий по данным OSM. Непрерывность, проходимость и пересечения улиц не проверены.';}
+}catch(e){note.textContent='Сервис OSM сейчас не ответил. Попробуй позже; существующая карта города доступна.';}
+}
+$('showCrossings').addEventListener('click',()=>load('crossings'));
+$('showFootways').addEventListener('click',()=>load('walk'));
+$('hideWalkData').addEventListener('click',()=>{if(walkLayer)walkLayer.clearLayers();listing.textContent='';note.textContent='Пешеходные слои скрыты.'});
 })();
 </script>
 </body></html>
