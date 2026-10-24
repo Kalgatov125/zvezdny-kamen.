@@ -77,7 +77,15 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
 <button type="button" class="primary" id="petPlay" style="margin:0">🫧 Поиграть +5 XP</button>
 <button type="button" class="primary" id="petCare" style="margin:0">💗 Позаботиться +5 XP</button></div>
-<p id="petFeedback" class="muted" aria-live="polite">Каждое действие доступно раз в день.</p></section><div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
+<p id="petFeedback" class="muted" aria-live="polite">Каждое действие доступно раз в день.</p></section><section class="quest" style="display:block;margin-top:12px;background:linear-gradient(140deg,#3b356b,#20264b)">
+<div style="font-size:12px;color:#edc9ff;font-weight:800;letter-spacing:1px">🧭 КВЕСТЫ РЫБКИ</div>
+<h2 style="margin:5px 0;font-size:21px">Сегодняшние приключения</h2>
+<p class="muted">Всё связано: проходи мини-игру, получай трофеи и опыт для рыбки. Без GPS.</p>
+<div id="questBoard" aria-live="polite"></div>
+<div style="margin-top:12px;padding:12px;border-radius:14px;background:#ffffff13">
+<b id="questRewardTitle">🎀 Награда дня</b><p class="muted" id="questRewardText" style="margin:5px 0">Выполни задания, чтобы получить особый значок.</p>
+<button type="button" class="primary" id="questClaim" style="margin:8px 0 0" disabled>🏅 Забрать награду</button></div>
+</section><div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Подбираем безопасные точки по пешеходным дорожкам</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
 <div class="heading"><h2>🗺️ Карта приключений</h2><span>3 главы</span></div>
@@ -176,6 +184,25 @@ function stage(){return Math.min(4,Math.floor(data.xp/30))}
 function render(){const st=stage(),names=['Маленькая рыбка','Весёлая рыбка','Смелая исследовательница','Звёздная рыбка','Королева приключений'],emojis=['🐠','🐟','🐡','🐬','👑'];$('petTitle').textContent=names[st];$('petAvatar').textContent=emojis[st];$('petXP').textContent=data.xp+' XP · ступень '+(st+1)+' из 5';$('petBar').style.width=st===4?'100%':(data.xp%30)/30*100+'%';$('petMission').textContent=st===4?'✨ Максимальная ступень! Рыбка стала королевой приключений.':'До следующей ступени '+(30-data.xp%30)+' XP.';for(let [id,action] of [['petPlay','play'],['petCare','care']]){const used=data.actions[action]===today();$(id).disabled=used;$(id).style.opacity=used?'.45':'1'}}
 function act(action){if(data.actions[action]===today())return;data.actions[action]=today();data.xp=Math.min(120,data.xp+5);try{localStorage.setItem(key,JSON.stringify(data))}catch(e){}$('petFeedback').textContent=action==='play'?'🫧 Рыбка весело играет и получает +5 XP!':'❤️ Рыбка чувствует твою заботу! +5 XP';render()}
 $('petPlay').addEventListener('click',()=>act('play'));$('petCare').addEventListener('click',()=>act('care'));render();
+})();
+(function(){
+const $=id=>document.getElementById(id),storage='fish-quests-v1';
+const day=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+let progress={date:day(),claimed:false};try{const v=JSON.parse(localStorage.getItem(storage)||'null');if(v&&v.date===day())progress=v}catch(e){}
+function read(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch(e){return fallback}}
+const checks=[
+{label:'Поиграть с рыбкой',done:()=>{const p=read('fish-pet-v1',{});return p.actions?.play===day().replace(/-0/g,'-')||p.actions?.play===[new Date().getFullYear(),new Date().getMonth()+1,new Date().getDate()].join('-')}},
+{label:'Позаботиться о рыбке',done:()=>{const p=read('fish-pet-v1',{});return p.actions?.care===[new Date().getFullYear(),new Date().getMonth()+1,new Date().getDate()].join('-')}},
+{label:'Найти первый трофей',done:()=>{const x=read('fish-treasure-collection-v1',[]);return Array.isArray(x)&&x.length>0}}
+];
+function render(){const board=$('questBoard');board.textContent='';let done=0;checks.forEach((q,i)=>{const yes=!!q.done();if(yes)done++;const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;align-items:center;border-bottom:1px solid #ffffff20;padding:10px 0';const icon=document.createElement('span');icon.style.fontSize='22px';icon.textContent=yes?'✅':'🔲';const label=document.createElement('span');label.textContent=q.label;row.append(icon,label);board.appendChild(row)});
+const complete=done===checks.length;$('questRewardText').textContent=progress.claimed?'❤️ Значок дня получен! Возвращайся завтра.':done+' из '+checks.length+' заданий выполнено. '+(complete?'Награда готова!':'Продолжай приключение.');
+$('questClaim').disabled=!complete||progress.claimed;$('questClaim').style.opacity=(!complete||progress.claimed)?'.5':'1';
+}
+$('questClaim').addEventListener('click',()=>{if(checks.every(q=>q.done())&&!progress.claimed){progress.claimed=true;try{localStorage.setItem(storage,JSON.stringify(progress))}catch(e){}$('questRewardTitle').textContent='🏅 Рыбкин день — получено!';render()}});
+document.getElementById('petPlay').addEventListener('click',()=>setTimeout(render,0));
+document.getElementById('petCare').addEventListener('click',()=>setTimeout(render,0));
+document.getElementById('treasureField').addEventListener('click',()=>setTimeout(render,0));render();
 })();
 </script>
 </body></html>
