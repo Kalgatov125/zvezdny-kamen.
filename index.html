@@ -64,6 +64,20 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 .home-quick button span{font-size:28px;display:block;margin-bottom:6px}.home-quick button small{display:block;color:#c9c2e6;font-weight:500}
 .tab-pane{animation:tabshow .25s ease-out}@keyframes tabshow{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.fish-art,.bubble,.tab-pane{animation:none!important}}
+</style><style>
+#fishMoodCard{margin:0 0 12px;border:1px solid #8777b5;border-radius:20px;background:linear-gradient(120deg,#44336e,#2b345f);padding:14px}
+#fishMoodCard h2{margin:0 0 7px;font-size:19px}
+.fish-touch{border:0;background:#ffffff15;color:white;border-radius:19px;padding:14px;min-height:116px;width:100%;display:flex;gap:10px;align-items:center;text-align:left}
+.fish-touch .fish-face{font-size:67px;line-height:1;transition:transform .3s}
+.fish-touch.popped .fish-face{transform:scale(1.2) rotate(-12deg)}
+.fish-touch b{display:block;font-size:16px}
+.fish-touch small{display:block;font-size:12px;color:#ded2fa;margin-top:4px}
+.fish-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.fish-actions button{border:1px solid #8d79b9;background:#342e60;border-radius:13px;color:white;padding:12px 7px;min-height:48px;font-weight:800}
+#fishBubbles{position:relative;height:0;pointer-events:none}
+.bubble-heart{position:absolute;bottom:18px;left:50%;font-size:25px;animation:heartfloat 1.35s ease-out forwards}
+@keyframes heartfloat{to{transform:translate(var(--x),-110px) rotate(17deg);opacity:0}}
+@media(prefers-reduced-motion:reduce){.bubble-heart{animation:none;display:none}}
 </style></head>
 <body>
 <header class="hero"><div class="brand"><div class="mascot" aria-hidden="true">🐠</div><div><div class="small">Маленькое большое приключение</div><h1>Привет, рыбка! <span>✨</span></h1><p>Твой волшебный Большой Камень</p></div></div>
@@ -142,7 +156,13 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <path d="M92 56 Q131 31 174 50" fill="none" stroke="#ffecc4" stroke-width="6" opacity=".65" stroke-linecap="round"/>
 <path d="M201 40 l4 -13 4 13 13 4 -13 4 -4 13 -4 -13 -13 -4Z" fill="#ffe8a6"/>
 </svg></div></div>
-<div class="home-quick"><button data-jump="games" type="button"><span>🐚</span>Искать сокровища<small>Мини-игра</small></button><button data-jump="pet" type="button"><span>🪸</span>Мой аквариум<small>Друзья и рыбка</small></button><button data-jump="prizes" type="button"><span>🏆</span>Зал славы<small>Коллекция наград</small></button><button data-jump="city" type="button"><span>🗺️</span>Большой Камень<small>Карта города</small></button></div></section>
+<section id="fishMoodCard" aria-label="Живая рыбка">
+<h2>🐠 Познакомься с Рыбкой</h2>
+<div id="fishBubbles" aria-hidden="true"></div>
+<button class="fish-touch" type="button" id="fishTap"><span class="fish-face" id="fishFace">🐠</span><span><b id="fishFeeling">Рыбка ждёт внимания</b><small id="fishCaption">Нажми — и она улыбнётся!</small></span></button>
+<div class="fish-actions"><button type="button" id="fishFeed">🍤 Покормить</button><button type="button" id="fishHug">💗 Погладить</button></div>
+<div class="muted" id="fishHint" style="margin:10px 2px 0">Забота улучшает настроение Рыбки. Состояние сохраняется на этом устройстве.</div>
+</section><div class="home-quick"><button data-jump="games" type="button"><span>🐚</span>Искать сокровища<small>Мини-игра</small></button><button data-jump="pet" type="button"><span>🪸</span>Мой аквариум<small>Друзья и рыбка</small></button><button data-jump="prizes" type="button"><span>🏆</span>Зал славы<small>Коллекция наград</small></button><button data-jump="city" type="button"><span>🗺️</span>Большой Камень<small>Карта города</small></button></div></section>
 <section id="tab-city" class="tab-pane" hidden></section>
 <section id="tab-games" class="tab-pane" hidden></section>
 <section id="tab-pet" class="tab-pane" hidden></section>
@@ -326,6 +346,23 @@ navs.forEach(b=>b.addEventListener('click',()=>select(b.dataset.tab)));
 document.querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>select(b.dataset.jump)));
 document.querySelector('.hero')?.addEventListener('click',()=>{});
 select('home');
+})();
+</script>
+<script>
+(function(){
+const key='fish-interactions-v1', $=id=>document.getElementById(id);
+let state={mood:1,lastFed:'',touches:0};
+try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&typeof saved==='object')state={...state,...saved}}catch(e){}
+function save(){try{localStorage.setItem(key,JSON.stringify(state))}catch(e){}}
+const moods=['😴 Рыбка отдыхает','🙂 Рыбка довольна','😊 Рыбка счастлива','😍 Рыбка тебя обожает'];
+function paint(){const m=Math.max(0,Math.min(3,Number(state.mood)||0));$('fishFeeling').textContent=moods[m];$('fishFace').textContent=m===0?'🐟':m===3?'🐠💗':'🐠';}
+let timer;
+function joy(message,emote){$('fishCaption').textContent=message;$('fishTap').classList.add('popped');clearTimeout(timer);timer=setTimeout(()=>$('fishTap').classList.remove('popped'),380);
+const root=$('fishBubbles');for(let i=0;i<4;i++){const sp=document.createElement('span');sp.className='bubble-heart';sp.textContent=emote;sp.style.setProperty('--x',(i*28-42)+'px');sp.style.left=(42+i*5)+'%';root.appendChild(sp);setTimeout(()=>sp.remove(),1450)}}
+$('fishTap').addEventListener('click',()=>{state.touches=(Number(state.touches)||0)+1;state.mood=Math.min(3,(Number(state.mood)||0)+1);save();paint();joy('Буль! Рыбка машет хвостиком 🫧','💗')});
+$('fishHug').addEventListener('click',()=>{state.mood=Math.min(3,(Number(state.mood)||0)+1);save();paint();joy('Как приятно! Рыбка улыбается ❤️','❤️')});
+$('fishFeed').addEventListener('click',()=>{const d=new Date().toLocaleDateString('en-CA');if(state.lastFed===d){joy('Сегодня Рыбка уже поела 🍤','🫧');return}state.lastFed=d;state.mood=3;save();paint();joy('Вкусно! Спасибо за угощение!','✨')});
+paint();
 })();
 </script>
 </body></html>
