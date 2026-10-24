@@ -47,7 +47,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <main class="content">
 <div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>Две крайние точки взяты из карточек 2ГИС, но точный вход в место работы и пешеходный маршрут не подтверждены. Промежуточные звёзды расположены приблизительно, поэтому не следуй к ним напрямую.</div></div>
 <div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
-<div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Собери 5 звёзд, чтобы открыть следующую главу</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
+<div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Подбираем безопасные точки по пешеходным дорожкам</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
 <div class="heading"><h2>🗺️ Карта приключений</h2><span>3 главы</span></div>
 <div class="chips"><span class="chip">🌷 1. Первые шаги</span><span class="chip locked" id="region2">🔒 2. Новые горизонты</span><span class="chip locked" id="region3">🔒 3. Тайны города</span></div>
@@ -61,7 +61,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 'use strict';
 const $=id=>document.getElementById(id), center=[43.107826,132.34912], storageKey='fish-stars-gps-v1';
 let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
-const stars=[{"id":1,"pos":[43.106975,132.345382],"name":"У Чайки"},{"id":2,"pos":[43.107253,132.346208],"name":"Первый поворот"},{"id":3,"pos":[43.107281,132.347034],"name":"Искорка"},{"id":4,"pos":[43.107619,132.34786],"name":"Улыбка Рыбки"},{"id":5,"pos":[43.107657,132.348687],"name":"Золотой свет"},{"id":6,"pos":[43.108004,132.349513],"name":"Маленькое чудо"},{"id":7,"pos":[43.108032,132.350339],"name":"Звёздная тропинка"},{"id":8,"pos":[43.10837,132.351165],"name":"На пути домой"},{"id":9,"pos":[43.108428,132.351992],"name":"Счастливое место"},{"id":10,"pos":[43.108666,132.352818],"name":"Почти дома"}];
+const stars=[];
 const map=L.map('map',{zoomControl:false}).setView(center,16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 let gpsMarker=null, markers=[], userPos=null, posAccuracy=Infinity;
@@ -80,12 +80,12 @@ function chapter(){return collected.length>=8?3:collected.length>=5?2:1}
 function update(){
 const n=collected.length,c=chapter();
 $('starsCount').textContent=n;$('levelCount').textContent=1+Math.floor(n/3);$('regionCount').textContent=c+'/3';
-$('missionTag').textContent=Math.min(n,5)+' из 5';$('questText').textContent=n>=5?'Глава 2 открыта! Продолжай собирать звёзды ✨':'Собери '+(5-n)+' звёзд, чтобы открыть главу 2';
+$('missionTag').textContent='Проверка пути';$('questText').textContent='Звёзды появятся после проверки пешеходных переходов и дорожек.';
 $('progressBar').style.width=Math.min(100,n*20)+'%';
-$('giftText').textContent=n>=3?'💌 Твой сюрприз уже найден!':'Ещё '+(3-n)+' звёзды до сюрприза ❤️';
+$('giftText').textContent='Твой сюрприз сохранён до открытия безопасного маршрута ❤️';
 $('region2').classList.toggle('locked',c<2);$('region2').textContent=c<2?'🔒 2. Новые горизонты':'🌅 2. Новые горизонты';
 $('region3').classList.toggle('locked',c<3);$('region3').textContent=c<3?'🔒 3. Тайны города':'💎 3. Тайны города';
-$('mapLabel').textContent=['','✨ Глава 1: Первые шаги','🌅 Глава 2: Новые горизонты','💎 Глава 3: Тайны города'][c];
+$('mapLabel').textContent='🚧 Маршрут проверяется';
 markers.forEach(m=>map.removeLayer(m));markers=[];
 for(const s of stars){if(s.id>5&&c<2||s.id>8&&c<3)continue;
 const done=collected.includes(s.id);
@@ -101,7 +101,7 @@ update();
 if(collected.length===3)popup('💌','Для моей рыбки','Ты уже нашла три звёздочки! ❤️ Я очень тебя люблю. Пусть этот город каждый день дарит тебе новые улыбки.');
 else if(chapter()>before)popup('🎉','Новая глава открыта!','Ура, рыбка! Ты открыла следующую главу приключений. На карте появились новые звёзды!');
 else popup('🌟','Звезда собрана!','«'+s.name+'» теперь в твоей коллекции. '+collected.length+' из 10!')}
-$('locate').addEventListener('click',()=>{if(!navigator.geolocation){popup('📍','GPS недоступен','Этот браузер не поддерживает определение местоположения.');return}
+$('locate').addEventListener('click',()=>{popup('📍','GPS пока не нужен','Две конечные точки показаны по картографическим данным. Пока маршрут не проверен по тротуарам, сбор звёзд выключен.');return;if(!navigator.geolocation){popup('📍','GPS недоступен','Этот браузер не поддерживает определение местоположения.');return}
 navigator.geolocation.getCurrentPosition(p=>{const pos=[p.coords.latitude,p.coords.longitude];userPos=pos;posAccuracy=p.coords.accuracy;if(gpsMarker)map.removeLayer(gpsMarker);gpsMarker=L.circleMarker(pos,{radius:9,color:'white',weight:3,fillColor:'#39a7ff',fillOpacity:1}).addTo(map).bindPopup('Ты здесь, рыбка 🐠');map.setView(pos,16);popup('📍','Рыбка найдена!','Синяя точка на карте — твоё местоположение. Нажми звёздочку на карте, находясь не дальше 55 м от неё (при точности GPS до 75 м).')},()=>popup('📍','Не удалось найти тебя','Разреши геолокацию для сайта в настройках браузера.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
 $('resetView').addEventListener('click',()=>map.fitBounds(L.latLngBounds([work,home]).pad(.20),{padding:[18,18]}));
 $('navMap').addEventListener('click',()=>document.querySelector('.map-wrap').scrollIntoView({behavior:'smooth'}));
