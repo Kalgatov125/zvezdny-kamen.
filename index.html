@@ -38,6 +38,18 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 .dialog .art{font-size:72px;animation:float 2s infinite}.dialog h2{margin:11px 0;font-size:23px}.dialog p{color:#ded8f5}.primary{background:linear-gradient(120deg,#ffdf85,#ffae9f);border:0;padding:13px 22px;border-radius:15px;color:#392d45;font-weight:900;margin-top:10px;min-height:45px}
 .leaflet-container{font-family:inherit}.leaflet-popup-content{font-size:14px}.leaflet-control-attribution{font-size:9px!important}
 @media(prefers-reduced-motion:reduce){.mascot,.star-icon,.dialog .art{animation:none}*{scroll-behavior:auto!important}}
+
+.game-tabs{display:flex;gap:7px;padding:10px 12px;background:#191d42;border-top:1px solid #655b9290;position:sticky;bottom:0;z-index:999;justify-content:space-between}
+.game-tabs button{border:0;background:transparent;color:#bfc4e8;border-radius:12px;padding:8px 4px;min-width:0;flex:1;font-weight:800;font-size:11px;min-height:48px}
+.game-tabs button .i{display:block;font-size:22px;line-height:25px}
+.game-tabs button.active{background:#474475;color:#fff2ba}
+.tab-pane{padding:12px 12px 30px;max-width:850px;margin:auto}
+.tab-pane[hidden]{display:none!important}
+.tab-pane .quest{max-width:820px;margin:12px auto!important}
+.tab-pane>.map-wrap{margin:0}
+.game-welcome{padding:15px;border-radius:20px;background:linear-gradient(135deg,#41376f,#2b2e61);border:1px solid #7364aa;margin:0 0 12px}
+.game-welcome h2{margin:0 0 6px;font-size:23px}.game-welcome p{margin:0;color:#dcd5f0}
+@media(min-width:720px){.game-tabs{max-width:850px;margin:auto;border-radius:20px 20px 0 0}.tab-pane{padding:20px}}
 </style></head>
 <body>
 <header class="hero"><div class="brand"><div class="mascot" aria-hidden="true">🐠</div><div><div class="small">Маленькое большое приключение</div><h1>Привет, рыбка! <span>✨</span></h1><p>Твой волшебный Большой Камень</p></div></div>
@@ -97,7 +109,21 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <div class="chips"><span class="chip">🌷 1. Первые шаги</span><span class="chip locked" id="region2">🔒 2. Новые горизонты</span><span class="chip locked" id="region3">🔒 3. Тайны города</span></div>
 <p class="note">🐠 GPS используется только по кнопке и не отправляется на сервер игры. Собранные демозвёзды сохраняются в памяти браузера. При очистке данных браузера прогресс может исчезнуть. Для обновления положения нажимай 📍 перед сбором звезды. Расположение точек пока приблизительное: это не проверенный пешеходный маршрут. Не ходи к звёздам по прямой и не пересекай дороги вне переходов.</p>
 </main>
-<nav class="bottom" aria-label="Игровое меню"><button type="button" id="navMap"><strong>🗺️</strong>Карта</button><button type="button" id="navCollection"><strong>🎒</strong>Коллекция</button><button type="button" id="navHelp"><strong>🐠</strong>Рыбка</button></nav>
+<nav class="bottom" style="display:none" aria-label="Старое меню"><button type="button" id="navMap"><strong>🗺️</strong>Карта</button><button type="button" id="navCollection"><strong>🎒</strong>Коллекция</button><button type="button" id="navHelp"><strong>🐠</strong>Рыбка</button></nav>
+<div id="gamePages">
+<section id="tab-home" class="tab-pane"><div class="game-welcome"><h2>✨ Приключение начинается!</h2><p>Собирай трофеи, выращивай рыбку и открывай награды. Сегодня можно играть прямо дома 🐠</p></div></section>
+<section id="tab-city" class="tab-pane" hidden></section>
+<section id="tab-games" class="tab-pane" hidden></section>
+<section id="tab-pet" class="tab-pane" hidden></section>
+<section id="tab-prizes" class="tab-pane" hidden></section>
+</div>
+<nav class="game-tabs" aria-label="Разделы игры">
+<button class="active" type="button" data-tab="home"><span class="i">🏡</span>Главная</button>
+<button type="button" data-tab="city"><span class="i">🗺️</span>Город</button>
+<button type="button" data-tab="games"><span class="i">🎲</span>Игры</button>
+<button type="button" data-tab="pet"><span class="i">🐠</span>Рыбка</button>
+<button type="button" data-tab="prizes"><span class="i">🏆</span>Награды</button>
+</nav>
 <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog"><div class="art" id="dialogArt">⭐</div><h2 id="dialogTitle">Звёздочка!</h2><p id="dialogText">Ты молодец!</p><button type="button" id="closeDialog" class="primary">Продолжить ✨</button></div></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -232,6 +258,42 @@ $('treasureField')?.addEventListener('click',()=>setTimeout(renderAchievements,0
 const nav=document.querySelector('.bottom');
 const btn=document.createElement('button');btn.type='button';btn.innerHTML='<strong>🏆</strong>Награды';btn.addEventListener('click',()=>document.getElementById('achievementSection').scrollIntoView({behavior:'smooth',block:'center'}));nav.appendChild(btn);
 renderAchievements();
+})();
+</script>
+<script>
+(function(){
+const pane=k=>document.getElementById('tab-'+k), content=document.querySelector('main.content');
+const sections=Array.from(content.children);
+const mini=document.getElementById('miniGame');
+const album=document.getElementById('treasureAlbum')?.closest('section');
+const aqua=document.getElementById('aquarium')?.closest('section');
+const diary=document.getElementById('dailyGift')?.closest('section');
+const pet=document.getElementById('petPlay')?.closest('section');
+const daily=document.getElementById('questBoard')?.closest('section');
+const trophy=document.getElementById('achievementSection');
+const cityItems=sections.filter(x=>x.classList.contains('heading')||x.classList.contains('chips')||x.classList.contains('note')||(x.classList.contains('quest')&&!x.matches('section')));
+const m=document.querySelector('.map-wrap');
+pane('city').appendChild(m);
+const notice=content.querySelector('.callout');if(notice)pane('city').appendChild(notice);
+cityItems.forEach(el=>pane('city').appendChild(el));
+if(daily)pane('home').appendChild(daily);
+if(diary)pane('home').appendChild(diary);
+if(mini)pane('games').appendChild(mini);
+if(album)pane('games').appendChild(album);
+if(pet)pane('pet').appendChild(pet);
+if(aqua)pane('pet').appendChild(aqua);
+if(trophy)pane('prizes').appendChild(trophy);
+content.style.display='none';
+const navs=Array.from(document.querySelectorAll('.game-tabs button[data-tab]'));
+function select(tab){
+for(const k of ['home','city','games','pet','prizes'])pane(k).hidden=k!==tab;
+for(const b of navs){const selected=b.dataset.tab===tab;b.classList.toggle('active',selected);b.setAttribute('aria-current',selected?'page':'false')}
+if(tab==='city'&&typeof map!=='undefined'&&map.invalidateSize){setTimeout(()=>map.invalidateSize(),100)}
+window.scrollTo({top:0,behavior:'instant'});
+}
+navs.forEach(b=>b.addEventListener('click',()=>select(b.dataset.tab)));
+document.querySelector('.hero')?.addEventListener('click',()=>{});
+select('home');
 })();
 </script>
 </body></html>
