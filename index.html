@@ -1,34 +1,114 @@
-<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#17203f"><title>Звёздный Камень 🐠</title>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171a3b"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>Звёздный Камень — приключение Рыбки</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#101b38;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-header{padding:24px 18px 14px;background:linear-gradient(140deg,#243367,#4c2c69)}h1{font-size:27px;margin:0}header p{margin:8px 0 0;color:#d9d6f5}
-nav{display:flex;gap:10px;margin-top:16px}.pill{border:1px solid #ffffff40;background:#ffffff18;border-radius:15px;padding:9px 13px;font-weight:700}
-#map{height:55vh;min-height:320px;z-index:0}.panel{padding:16px;max-width:750px;margin:auto}.btn{border:0;border-radius:16px;min-height:48px;padding:13px 17px;background:#ffd66f;color:#27213a;font-size:16px;font-weight:750;cursor:pointer}
-.btn.alt{background:#263b66;color:#fff;border:1px solid #506293}
-.actions{display:flex;gap:10px;flex-wrap:wrap}.card{background:#1d2a4c;border:1px solid #34446d;border-radius:18px;padding:16px;margin-top:12px}.card h2{font-size:18px;margin:0 0 8px}.muted{color:#c4cbe0;font-size:14px;line-height:1.5}.notice{color:#ffdf9e}.progress{height:9px;background:#415072;border-radius:99px;overflow:hidden}.progress b{display:block;height:100%;background:#ffd66f;width:0%}.star-pin{font-size:27px;text-shadow:0 2px 5px #000}.leaflet-popup-content{color:#20263b}.leaflet-container{font-family:inherit}
-</style></head><body><header><h1>🐠 Привет, рыбка!</h1><p>Большой Камень ждёт твоих открытий ✨</p><nav><span class="pill">⭐ <span id="total">0</span> звёзд</span><span class="pill">🏅 <span id="level">1</span> уровень</span></nav></header>
-<div id="map" role="application" aria-label="Карта игрового города"></div>
-<div class="panel"><div class="actions"><button class="btn" id="gps">📍 Найти меня</button><button class="btn alt" id="home">🗺️ Весь город</button></div>
-<div class="card"><h2 id="messageTitle">🌟 Приключение начинается!</h2><p id="message" class="muted">Нажми «Найти меня», чтобы увидеть своё местоположение. Первая звёздочка пока учебная: настоящие безопасные точки мы добавим после проверки.</p></div>
-<div class="card"><h2>🔓 Исследование районов</h2><p class="muted" id="chapter">Глава 1 — Первые шаги · 0/1</p><div class="progress"><b id="bar"></b></div><p class="muted">Новые главы появятся по мере разработки. Прогресс сохраняется на этом устройстве.</p></div>
-<p class="muted notice">⚠️ Это тестовая версия с одной демонстрационной звездой, а не готовый маршрут. Не выходи на проезжую часть, не заходи в закрытые дворы и не смотри в экран на ходу. Геолокация работает только с разрешения и при открытой странице.</p></div>
+:root{--bg:#11142f;--card:#20254b;--gold:#ffda75;--pink:#ff8dbc;--mint:#7bf2db;--text:#fff8ff;--muted:#b8bedb}
+*{box-sizing:border-box}body{margin:0;color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 15% -10%,#5d347e 0,transparent 40%),var(--bg)}
+button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;outline-offset:3px}
+.hero{padding:18px 18px 12px;position:relative;overflow:hidden;background:linear-gradient(135deg,#38326c,#272653 55%,#50346b)}
+.hero:after{content:"✦  ·  ✧  ⋆";position:absolute;right:14px;top:20px;color:#d8bdff50;font-size:30px;pointer-events:none}
+.brand{display:flex;gap:12px;align-items:center}.mascot{width:61px;height:61px;display:grid;place-items:center;border-radius:21px;background:linear-gradient(145deg,#ffecd0,#ffc2c3);font-size:37px;box-shadow:0 8px 0 #0002;animation:float 3s ease-in-out infinite}@keyframes float{50%{transform:translateY(-5px)}}
+.small{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:#ded2fb}.hero h1{margin:3px 0 2px;font-size:24px;line-height:1.1}.hero p{margin:3px 0;color:#dfdafa;font-size:13px}
+.stats{display:flex;gap:9px;margin-top:17px}.stat{background:#ffffff13;border:1px solid #ffffff26;border-radius:15px;flex:1;min-width:0;padding:10px 11px}.stat b{font-size:20px;color:var(--gold)}.stat span{display:block;font-size:11px;color:#d8d3ea}
+.map-wrap{position:relative;margin:14px 12px 0;border-radius:24px;overflow:hidden;border:2px solid #5c568c;box-shadow:0 15px 32px #04051c77}
+#map{height:min(53vh,530px);min-height:345px;background:#212946;z-index:0}
+.map-label{position:absolute;z-index:400;top:12px;left:12px;border-radius:15px;background:#242144ed;color:white;padding:8px 12px;font-weight:800;font-size:12px;box-shadow:0 3px 16px #0005}
+.float-actions{position:absolute;z-index:400;bottom:13px;right:13px;display:grid;gap:9px}
+.fab{height:47px;width:47px;background:#fff;border:0;border-radius:17px;box-shadow:0 5px 14px #0005;font-size:24px}
+.star-icon{filter:drop-shadow(0px 4px 2px #4b2b6577);font-size:33px;line-height:38px;text-align:center;animation:twinkle 2.3s infinite alternate}@keyframes twinkle{to{transform:scale(1.17) rotate(7deg)}}
+.marker-lock{filter:drop-shadow(0 3px 3px #0006);font-size:30px;text-align:center}
+.content{padding:15px 13px 32px;max-width:820px;margin:auto}
+.callout{display:flex;gap:11px;align-items:center;background:#2b2853;border:1px solid #7563a3;border-radius:17px;padding:11px 13px;font-size:12px;color:#e6dff7}
+.callout .ico{font-size:25px}
+.heading{display:flex;justify-content:space-between;align-items:baseline;margin:21px 3px 10px}.heading h2{margin:0;font-size:19px}.heading span{font-size:12px;color:var(--muted)}
+.quest{display:flex;gap:12px;align-items:center;margin-bottom:10px;background:linear-gradient(120deg,#2c305c,#25274d);border:1px solid #414877;border-radius:19px;padding:13px}
+.quest-icon{height:51px;width:51px;display:grid;place-items:center;background:#ffffff13;border-radius:16px;font-size:28px;flex:none}
+.quest-main{flex:1;min-width:0}.quest-title{font-weight:800;font-size:14px}.quest-desc{font-size:12px;color:var(--muted);margin:3px 0}
+.bar{height:7px;border-radius:7px;background:#555b80;overflow:hidden;margin-top:8px}.fill{height:100%;border-radius:7px;background:linear-gradient(90deg,#ffc96c,#ff92ae);width:0;transition:width .5s}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{padding:9px 11px;border:1px solid #605988;border-radius:13px;background:#28264d;font-size:13px}.chip.locked{opacity:.5;filter:grayscale(.8)}
+.note{font-size:12px;color:var(--muted);line-height:1.55;margin:17px 3px}
+.bottom{position:sticky;bottom:0;display:flex;justify-content:space-around;background:#1b1a3bf0;backdrop-filter:blur(12px);border-top:1px solid #6860925e;padding:9px 4px max(9px,env(safe-area-inset-bottom));z-index:600}
+.bottom button{border:0;background:none;color:#d8d0ef;font-size:12px;font-weight:700;padding:5px 10px}.bottom button strong{display:block;font-size:23px}
+.overlay{position:fixed;inset:0;background:#05071ac9;display:none;align-items:center;justify-content:center;padding:20px;z-index:1100}
+.overlay.visible{display:flex}.dialog{background:linear-gradient(145deg,#3b326c,#21264b);border:2px solid #8f78b3;border-radius:25px;max-width:375px;width:100%;text-align:center;padding:27px 20px;box-shadow:0 25px 80px #000b}
+.dialog .art{font-size:72px;animation:float 2s infinite}.dialog h2{margin:11px 0;font-size:23px}.dialog p{color:#ded8f5}.primary{background:linear-gradient(120deg,#ffdf85,#ffae9f);border:0;padding:13px 22px;border-radius:15px;color:#392d45;font-weight:900;margin-top:10px;min-height:45px}
+.leaflet-container{font-family:inherit}.leaflet-popup-content{font-size:14px}.leaflet-control-attribution{font-size:9px!important}
+@media(prefers-reduced-motion:reduce){.mascot,.star-icon,.dialog .art{animation:none}*{scroll-behavior:auto!important}}
+</style></head>
+<body>
+<header class="hero"><div class="brand"><div class="mascot" aria-hidden="true">🐠</div><div><div class="small">Маленькое большое приключение</div><h1>Привет, рыбка! <span>✨</span></h1><p>Твой волшебный Большой Камень</p></div></div>
+<div class="stats"><div class="stat"><b id="starsCount">0</b><span>⭐ Звёзд собрано</span></div><div class="stat"><b id="levelCount">1</b><span>👑 Уровень</span></div><div class="stat"><b id="regionCount">1/3</b><span>🗺️ Главы открыты</span></div></div>
+</header>
+<div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">✨ Глава 1: Первые шаги</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
+<main class="content">
+<div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>Собирай звёзды нажатием на карту! Точки пока условные: для настоящей прогулки мы отдельно проверим безопасные места.</div></div>
+<div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
+<div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Собери 5 звёзд, чтобы открыть следующую главу</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
+<div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
+<div class="heading"><h2>🗺️ Карта приключений</h2><span>3 главы</span></div>
+<div class="chips"><span class="chip">🌷 1. Первые шаги</span><span class="chip locked" id="region2">🔒 2. Новые горизонты</span><span class="chip locked" id="region3">🔒 3. Тайны города</span></div>
+<p class="note">🐠 GPS используется только по кнопке и не отправляется на сервер игры. Собранные демозвёзды сохраняются в памяти браузера. При очистке данных браузера прогресс может исчезнуть. Игра не предназначена для навигации через дороги.</p>
+</main>
+<nav class="bottom" aria-label="Игровое меню"><button type="button" id="navMap"><strong>🗺️</strong>Карта</button><button type="button" id="navCollection"><strong>🎒</strong>Коллекция</button><button type="button" id="navHelp"><strong>🐠</strong>Рыбка</button></nav>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog"><div class="art" id="dialogArt">⭐</div><h2 id="dialogTitle">Звёздочка!</h2><p id="dialogText">Ты молодец!</p><button type="button" id="closeDialog" class="primary">Продолжить ✨</button></div></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-(function(){
-const center=[43.112,132.35], map=L.map('map').setView(center,14);
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id), center=[43.112,132.35], storageKey='fish-stars-demo-v2';
+let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
+const stars=[
+{id:1,pos:[43.113,132.35],name:'Первая искорка'},
+{id:2,pos:[43.115,132.354],name:'Солнечная рыбка'},
+{id:3,pos:[43.109,132.353],name:'Звезда дружбы'},
+{id:4,pos:[43.110,132.346],name:'Маленькое чудо'},
+{id:5,pos:[43.116,132.346],name:'Пятое открытие'},
+{id:6,pos:[43.119,132.36],name:'Новые горизонты'},
+{id:7,pos:[43.106,132.359],name:'Улыбка города'},
+{id:8,pos:[43.12,132.343],name:'Таинственный свет'},
+{id:9,pos:[43.105,132.342],name:'Дорога приключений'},
+{id:10,pos:[43.117,132.339],name:'Золотое сердце'}
+];
+const map=L.map('map',{zoomControl:false}).setView(center,14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-const $=id=>document.getElementById(id), key='zvezdny-kamen-v1-star', demo=center;
-let me=null, myMarker=null;
-const icon=L.divIcon({html:'<span class="star-pin">⭐</span>',className:'',iconSize:[32,32],iconAnchor:[16,16]});
-const star=L.marker(demo,{icon}).addTo(map).bindPopup('⭐ Демонстрационная звезда. Координаты будут уточнены.');
-function show(t,m){$('messageTitle').textContent=t;$('message').textContent=m}
-function refresh(){const count=localStorage.getItem(key)==='1'?1:0;$('total').textContent=count;$('level').textContent=count?2:1;$('chapter').textContent=count?'Глава 1 пройдена! Следующая глава в разработке.':'Глава 1 — Первые шаги · 0/1';$('bar').style.width=count?'100%':'0%'}
-function distance(a,b){const r=Math.PI/180,dlat=(b[0]-a[0])*r,dlon=(b[1]-a[1])*r,x=Math.sin(dlat/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dlon/2)**2;return 12742000*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
-$('gps').addEventListener('click',()=>{if(!navigator.geolocation){show('GPS недоступен','Браузер не поддерживает геолокацию.');return}show('📍 Определяем местоположение','Разреши доступ к геолокации в браузере.');navigator.geolocation.getCurrentPosition(p=>{me=[p.coords.latitude,p.coords.longitude];if(myMarker)map.removeLayer(myMarker);myMarker=L.circleMarker(me,{radius:10,color:'#fff',weight:3,fillColor:'#398ffb',fillOpacity:1}).addTo(map).bindPopup('Ты здесь 🐠');map.setView(me,16);show('🐠 Рыбка найдена!','Теперь можно выбрать звёздочку на карте.')},()=>show('📍 Местоположение не получено','Проверь разрешение геолокации и доступ к интернету.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
-$('home').addEventListener('click',()=>map.setView(center,14));
-star.on('click',()=>{if(localStorage.getItem(key)==='1'){show('⭐ Уже собрано!','Ты уже получила эту звёздочку.');return}if(!me){show('📍 Сначала найди себя','Нажми «Найти меня», а затем вернись к звёздочке.');return}const d=Math.round(distance(me,demo));if(d>60){show('⭐ Звезда ждёт!', 'До демонстрационной точки примерно '+d+' м. Не отправляйся к ней специально — она пока не проверена.');return}localStorage.setItem(key,'1');refresh();show('✨ Поздравляю, рыбка!','Первая звёздочка собрана! ❤️')});refresh();
+let gpsMarker=null, markers=[];
+function popup(art,title,txt){$('dialogArt').textContent=art;$('dialogTitle').textContent=title;$('dialogText').textContent=txt;$('overlay').classList.add('visible');$('closeDialog').focus()}
+function close(){ $('overlay').classList.remove('visible') }
+$('closeDialog').addEventListener('click',close);$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+function chapter(){return collected.length>=8?3:collected.length>=5?2:1}
+function update(){
+const n=collected.length,c=chapter();
+$('starsCount').textContent=n;$('levelCount').textContent=1+Math.floor(n/3);$('regionCount').textContent=c+'/3';
+$('missionTag').textContent=Math.min(n,5)+' из 5';$('questText').textContent=n>=5?'Глава 2 открыта! Продолжай собирать звёзды ✨':'Собери '+(5-n)+' звёзд, чтобы открыть главу 2';
+$('progressBar').style.width=Math.min(100,n*20)+'%';
+$('giftText').textContent=n>=3?'💌 Твой сюрприз уже найден!':'Ещё '+(3-n)+' звёзды до сюрприза ❤️';
+$('region2').classList.toggle('locked',c<2);$('region2').textContent=c<2?'🔒 2. Новые горизонты':'🌅 2. Новые горизонты';
+$('region3').classList.toggle('locked',c<3);$('region3').textContent=c<3?'🔒 3. Тайны города':'💎 3. Тайны города';
+$('mapLabel').textContent=['','✨ Глава 1: Первые шаги','🌅 Глава 2: Новые горизонты','💎 Глава 3: Тайны города'][c];
+markers.forEach(m=>map.removeLayer(m));markers=[];
+for(const s of stars){if(s.id>5&&c<2||s.id>8&&c<3)continue;
+const done=collected.includes(s.id);
+const icon=L.divIcon({html:'<div class="'+(done?'marker-lock':'star-icon')+'">'+(done?'✅':'⭐')+'</div>',className:'',iconSize:[40,40],iconAnchor:[20,20]});
+const m=L.marker(s.pos,{icon}).addTo(map);
+m.on('click',()=>collect(s));markers.push(m)}
+}
+function collect(s){if(collected.includes(s.id)){popup('✅','Уже в коллекции!',s.name+' уже твоя.');return}
+const before=chapter();collected.push(s.id);try{localStorage.setItem(storageKey,JSON.stringify(collected))}catch(e){}
+update();
+if(collected.length===3)popup('💌','Для моей рыбки','Ты уже нашла три звёздочки! ❤️ Я очень тебя люблю. Пусть этот город каждый день дарит тебе новые улыбки.');
+else if(chapter()>before)popup('🎉','Новая глава открыта!','Ура, рыбка! Ты открыла следующую главу приключений. На карте появились новые звёзды!');
+else popup('🌟','Звезда собрана!','«'+s.name+'» теперь в твоей коллекции. '+collected.length+' из 10!')}
+$('locate').addEventListener('click',()=>{if(!navigator.geolocation){popup('📍','GPS недоступен','Этот браузер не поддерживает определение местоположения.');return}
+navigator.geolocation.getCurrentPosition(p=>{const pos=[p.coords.latitude,p.coords.longitude];if(gpsMarker)map.removeLayer(gpsMarker);gpsMarker=L.circleMarker(pos,{radius:9,color:'white',weight:3,fillColor:'#39a7ff',fillOpacity:1}).addTo(map).bindPopup('Ты здесь, рыбка 🐠');map.setView(pos,16);popup('📍','Рыбка найдена!','Синяя точка на карте — твоё местоположение. Звёзды в этой версии собираются касанием.')},()=>popup('📍','Не удалось найти тебя','Разреши геолокацию для сайта в настройках браузера.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
+$('resetView').addEventListener('click',()=>map.setView(center,14));
+$('navMap').addEventListener('click',()=>document.querySelector('.map-wrap').scrollIntoView({behavior:'smooth'}));
+$('navCollection').addEventListener('click',()=>popup('🎒','Твоя коллекция',collected.length?'Ты собрала '+collected.length+' из 10 звёзд! '+stars.filter(s=>collected.includes(s.id)).map(s=>s.name).join(' · '):'Пока здесь пусто. Нажми на первую звёздочку на карте!'));
+$('navHelp').addEventListener('click',()=>popup('🐠','Привет, рыбка!','Исследуй карту, собирай звёзды нажатием, открывай главы и находи сюрпризы. Пока это демоигра; дальше появятся безопасные реальные точки для прогулок.'));
+update();
 })();
-</script></body></html>
+</script>
+</body></html>
