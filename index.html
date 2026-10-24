@@ -95,7 +95,17 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<section id="cityLayers" style="padding:14px;border:1px solid #8179ac;border-radius:18px;background:#272b50;margin:12px 0">
+<section id="streetExplorer" style="background:#22294e;border:1px solid #7777ab;border-radius:19px;padding:15px;margin:12px 0">
+<div style="font-weight:800;color:#f9d996;font-size:12px">🏙️ ЖИВЫЕ УЛИЦЫ ГОРОДА</div>
+<h2 style="margin:5px 0;font-size:21px">Изучаем улицы Большого Камня</h2>
+<p class="muted">Названия и линии улиц загружаются из OpenStreetMap. Выбирай улицу — подсветим её на карте. <b>Подсветка не означает безопасный пешеходный маршрут.</b></p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+<button type="button" class="primary" id="loadStreets">🏙️ Найти улицы</button>
+<button type="button" class="primary" id="clearStreets">✕ Скрыть подсветку</button>
+</div>
+<div id="streetStatus" class="muted" aria-live="polite">Нажми «Найти улицы», чтобы изучить район.</div>
+<div id="streetList" style="display:grid;gap:7px;margin-top:10px"></div>
+</section><section id="cityLayers" style="padding:14px;border:1px solid #8179ac;border-radius:18px;background:#272b50;margin:12px 0">
 <h2 style="font-size:20px;margin:0 0 6px">🧭 Исследование района</h2>
 <p class="muted">Реальные объекты из OpenStreetMap: выбирай тип мест, чтобы видеть их на карте. Не является пешеходным маршрутом.</p>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -376,6 +386,7 @@ cityItems.forEach(el=>pane('city').appendChild(el));
 const explore=document.getElementById('exploreCity');if(explore)pane('city').insertBefore(explore,pane('city').firstChild);
 const crossings=document.getElementById('crossingExplorer');if(crossings)pane('city').insertBefore(crossings,pane('city').firstChild);
 const layers=document.getElementById('cityLayers');if(layers)pane('city').insertBefore(layers,pane('city').firstChild);
+const streets=document.getElementById('streetExplorer');if(streets)pane('city').insertBefore(streets,pane('city').firstChild);
 if(daily)pane('home').appendChild(daily);
 if(diary)pane('home').appendChild(diary);
 if(mini)pane('games').appendChild(mini);
@@ -533,6 +544,33 @@ for(const o of (data.elements||[]).slice(0,150)){const lat=o.lat??o.center?.lat,
 msg.textContent='На карте отмечено '+n+' объектов. Это справочные точки, их доступность и актуальность не подтверждены.';}
 catch(e){msg.textContent='Не удалось получить объекты. Повтори запрос позже.'}}
 document.querySelectorAll('#cityLayers [data-layer]').forEach(b=>b.addEventListener('click',()=>load(b.dataset.layer)));
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);let streetLayer=null,rows=[];
+const status=$('streetStatus'),list=$('streetList');
+const query='[out:json][timeout:22];way["highway"~"^(residential|tertiary|secondary|primary|living_street|pedestrian|service)$"]["name"](around:1900,43.107826,132.34912);out geom;';
+function mapReady(){return typeof L!=='undefined'&&!!window.cityExploreMap}
+function clear(){if(streetLayer)streetLayer.clearLayers()}
+$('clearStreets').addEventListener('click',()=>{clear();status.textContent='Подсветка улиц убрана.'});
+$('loadStreets').addEventListener('click',async()=>{
+if(!mapReady()){status.textContent='Карта не загружена, обнови страницу.';return}
+const map=window.cityExploreMap;streetLayer=streetLayer||L.layerGroup().addTo(map);clear();list.textContent='';status.textContent='Ищем названия и линии улиц в OpenStreetMap…';
+try{
+const rsp=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query})});if(!rsp.ok)throw Error('response');
+const data=await rsp.json(),groups=new Map();
+for(const w of data.elements||[]){const name=w.tags?.name;const pts=(w.geometry||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)).map(p=>[p.lat,p.lon]);if(!name||pts.length<2)continue;if(!groups.has(name))groups.set(name,[]);groups.get(name).push(pts)}
+rows=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0],'ru')).slice(0,45);
+status.textContent='Найдено '+rows.length+' улиц. Выбери улицу, чтобы увидеть её участки на карте.';
+rows.forEach(([name,segments])=>{
+const b=document.createElement('button');b.type='button';b.className='poiItem';
+const label=document.createElement('span');label.textContent='🛣️ '+name;const subtitle=document.createElement('small');subtitle.textContent='Показать '+segments.length+' участок(ов) · не маршрут';label.appendChild(subtitle);b.appendChild(label);
+b.addEventListener('click',()=>{clear();let bounds=null;for(const pts of segments){L.polyline(pts,{color:'#f9d787',weight:6,opacity:.86}).bindPopup(name+' — данные OpenStreetMap, пешеходная пригодность не проверена.').addTo(streetLayer);const bb=L.latLngBounds(pts);bounds=bounds?bounds.extend(bb):bb}if(bounds?.isValid())map.fitBounds(bounds.pad(.12),{padding:[25,25],maxZoom:17});status.textContent='Выбрана улица: '+name+'. Подсвечены все её найденные участки. Движение по ней для прогулки не проверено.'});list.appendChild(b);
+});
+if(!rows.length)status.textContent='Подписанные улицы в выбранном районе не найдены.';
+}catch(e){status.textContent='Сервис данных улиц временно недоступен. Попробуй повторить загрузку.'}
+});
 })();
 </script>
 </body></html>
