@@ -45,7 +45,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">✨ Глава 1: Первые шаги</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>Звёзды теперь собраны в узком коридоре между районом работы и домом, с короткими ответвлениями. Координаты приблизительные, безопасный пешеходный путь ещё необходимо проверить.</div></div>
+<div class="callout"><span class="ico">🧪</span><div><b>Игровая демоверсия</b><br>Я перенёс звёзды вдоль красной линии с твоего скриншота, а не вдоль соседних домов. Это приближённая привязка по изображению, не проверенный пешеходный маршрут.</div></div>
 <div class="heading"><h2>🎯 Твои приключения</h2><span id="missionTag">0 из 5</span></div>
 <div class="quest"><div class="quest-icon">⭐</div><div class="quest-main"><div class="quest-title">Звёздная охота</div><div class="quest-desc" id="questText">Собери 5 звёзд, чтобы открыть следующую главу</div><div class="bar"><div class="fill" id="progressBar"></div></div></div></div>
 <div class="quest"><div class="quest-icon">🎁</div><div class="quest-main"><div class="quest-title">Секрет от любимого</div><div class="quest-desc" id="giftText">Собери 3 звезды, чтобы открыть сюрприз ❤️</div></div></div>
@@ -59,20 +59,9 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <script>
 (()=>{
 'use strict';
-const $=id=>document.getElementById(id), center=[43.1094,132.3521], storageKey='fish-stars-demo-v2';
+const $=id=>document.getElementById(id), center=[43.1077,132.3495], storageKey='fish-stars-demo-v2';
 let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
-const stars=[
-{id:1,pos:[43.11095,132.35165],name:'Первая искорка'},
-{id:2,pos:[43.11035,132.35192],name:'Солнечная рыбка'},
-{id:3,pos:[43.10975,132.35205],name:'Звезда дружбы'},
-{id:4,pos:[43.10915,132.35208],name:'Маленькое чудо'},
-{id:5,pos:[43.10855,132.35213],name:'Пятое открытие'},
-{id:6,pos:[43.10795,132.35216],name:'Новые горизонты'},
-{id:7,pos:[43.10735,132.352],name:'Улыбка города'},
-{id:8,pos:[43.10695,132.35165],name:'Таинственный свет'},
-{id:9,pos:[43.1089,132.35255],name:'Золотое сердце'},
-{id:10,pos:[43.1098,132.35155],name:'Дорога приключений'}
-];
+const stars=[{"id":1,"pos":[43.106636,132.343356],"name":"Первый шаг"},{"id":2,"pos":[43.106715,132.344258],"name":"Рыбкин поворот"},{"id":3,"pos":[43.106953,132.345218],"name":"Искорка"},{"id":4,"pos":[43.1073,132.346216],"name":"Улыбка"},{"id":5,"pos":[43.107677,132.347138],"name":"Тёплая звезда"},{"id":6,"pos":[43.107876,132.348002],"name":"Маленький секрет"},{"id":7,"pos":[43.108084,132.348866],"name":"Капелька счастья"},{"id":8,"pos":[43.108342,132.349692],"name":"Звёздный след"},{"id":9,"pos":[43.10851,132.350556],"name":"Счастливый путь"},{"id":10,"pos":[43.108481,132.3514],"name":"Почти дома"}];
 const map=L.map('map',{zoomControl:false}).setView(center,16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 let gpsMarker=null, markers=[];
