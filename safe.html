@@ -119,7 +119,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 <button type="button" data-poi="culture">🎭 Культура</button>
 </div>
 <div id="poiStatus" class="muted">Получаем сведения о городских местах с OpenStreetMap…</div>
-<div id="poiList"></div>
+<div id="poiList"></div><div id="cityJournal" style="border-top:1px solid #7975a5;margin-top:13px;padding-top:11px"><b>📒 Дневник города</b><p class="muted" id="cityJournalSummary">Сохраняй интересные места и отмечай посещённые.</p><div id="cityJournalList" style="display:grid;gap:7px"></div></div>
 <p id="poiMore">Точки взяты из открытых картографических данных и могут быть неполными. Ни один объект не требует GPS и не является заданием перейти дорогу.</p>
 <button class="primary" type="button" id="reloadPois" style="margin-top:9px">🔄 Обновить сведения о городе</button>
 </section><div class="callout"><span class="ico">🚧</span><div><b>Маршрут закрыт для прогулок</b><br>Переходы через улицу Карла Маркса не проверены. Игровые звёзды убраны, GPS-сбор отключён. Не используй карту для перехода дорог.</div></div>
@@ -407,10 +407,13 @@ paint();
 <script>
 (function(){
 const $=id=>document.getElementById(id), box=$('poiList'),status=$('poiStatus');
-let pois=[],kind='all',markerLayer=null;
+let pois=[],kind='all',markerLayer=null;const journalKey='fish-city-journal-v1';let journal={};try{const j=JSON.parse(localStorage.getItem(journalKey)||'{}');if(j&&typeof j==='object'&&!Array.isArray(j))journal=j}catch(e){}
 const getKind=t=>t.historic==='memorial'||t.historic==='monument'||t.tourism==='attraction'?'sights':t.leisure==='park'||t.leisure==='garden'?'nature':'culture';
 const pict={sights:'🏛️',nature:'🌳',culture:'🎭'};
 const labels={sights:'Достопримечательность',nature:'Природа и отдых',culture:'Культура'};
+function key(p){return p.name+'|'+p.lat.toFixed(5)+'|'+p.lon.toFixed(5)}
+function saveJournal(){try{localStorage.setItem(journalKey,JSON.stringify(journal))}catch(e){}}
+function journalView(){const root=$('cityJournalList');root.textContent='';const saved=Object.entries(journal).filter(([k,v])=>v&&v.status);const done=saved.filter(([k,v])=>v.status==='visited').length;$('cityJournalSummary').textContent='Сохранено '+saved.length+' мест · посещено '+done+'. Записи хранятся только в этом браузере.';saved.forEach(([k,v])=>{const row=document.createElement('div');row.className='poiItem';row.style.justifyContent='space-between';const label=document.createElement('span');label.textContent=(v.status==='visited'?'✅ ':'🔖 ')+v.name;const button=document.createElement('button');button.textContent='✕';button.type='button';button.setAttribute('aria-label','Удалить '+v.name);button.style.cssText='border:0;background:#ffffff18;color:white;border-radius:9px;min-width:42px;min-height:42px';button.addEventListener('click',()=>{delete journal[k];saveJournal();journalView();render()});row.append(label,button);root.appendChild(row)})}
 async function load(){
 status.textContent='Загружаем объекты города…';box.textContent='';
 const q='[out:json][timeout:20];(nwr["historic"~"^(memorial|monument)$"](around:4200,43.107826,132.34912);nwr["tourism"="attraction"](around:4200,43.107826,132.34912);nwr["leisure"~"^(park|garden)$"](around:4200,43.107826,132.34912);nwr["amenity"~"^(library|theatre|arts_centre)$"](around:4200,43.107826,132.34912);nwr["tourism"="museum"](around:4200,43.107826,132.34912););out center;';
@@ -437,12 +440,14 @@ if(markerLayer)markerLayer.addLayer(mark);mark.bindPopup('📍 '+p.name+' — т
 m.setView([p.lat,p.lon],17);status.textContent='На карте: '+p.name+'. Безопасный путь к объекту не подтверждён.';
 });
 box.appendChild(btn);
+const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px';
+for(const [state,textLabel] of [['saved','🔖 Хочу посетить'],['visited','✅ Была здесь']]){const action=document.createElement('button');action.type='button';action.textContent=journal[key(p)]?.status===state?'✓ '+textLabel:textLabel;action.style.cssText='border:1px solid #817db1;background:#403a70;color:white;border-radius:11px;padding:8px 10px;min-height:42px;font-size:12px';action.addEventListener('click',()=>{journal[key(p)]={name:p.name,status:state};saveJournal();journalView();render()});actions.appendChild(action)}box.appendChild(actions);
 if(markerLayer&&typeof L!=='undefined'){const mark=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff1b8',weight:2,fillColor:'#b780dd',fillOpacity:.85}).bindPopup(p.name+' — объект OpenStreetMap; маршрут не проверен.');markerLayer.addLayer(mark);}
 });
 if(!subset.length&&pois.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='В выбранной категории пока нет объектов. Переключись на «Всё».';box.appendChild(empty)}
 }
 document.querySelectorAll('#poiButtons button').forEach(b=>b.addEventListener('click',()=>{kind=b.dataset.poi;document.querySelectorAll('#poiButtons button').forEach(x=>x.classList.toggle('selected',x===b));render()}));
-$('reloadPois').addEventListener('click',load);
+$('reloadPois').addEventListener('click',load);journalView();
 setTimeout(()=>{if(window.cityExploreMap&&typeof L!=='undefined')markerLayer=L.layerGroup().addTo(window.cityExploreMap);load()},450);
 })();
 </script>
