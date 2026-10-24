@@ -78,6 +78,16 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 .bubble-heart{position:absolute;bottom:18px;left:50%;font-size:25px;animation:heartfloat 1.35s ease-out forwards}
 @keyframes heartfloat{to{transform:translate(var(--x),-110px) rotate(17deg);opacity:0}}
 @media(prefers-reduced-motion:reduce){.bubble-heart{animation:none;display:none}}
+</style><style>
+#exploreCity{margin:14px 0;padding:15px;border:1px solid #7773a8;border-radius:20px;background:linear-gradient(140deg,#302d5e,#20264b)}
+#exploreCity h2{font-size:21px;margin:0 0 6px}
+#poiButtons{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+#poiButtons button{min-height:42px;padding:9px 12px;border:1px solid #7975a5;background:#37335d;border-radius:13px;color:#fff;cursor:pointer}
+#poiButtons button.selected{background:#ffe1a0;color:#2c254b}
+#poiList{display:grid;gap:9px;margin-top:10px}
+.poiItem{border:1px solid #68699d;background:#292b55;border-radius:14px;min-height:64px;text-align:left;color:white;padding:11px 12px;display:flex;gap:10px;align-items:center}
+.poiItem strong{display:block;font-size:14px}.poiItem small{color:#c8cbe6;display:block;margin-top:4px;font-size:12px}
+#poiMore{font-size:12px;color:#d3cce9;margin-top:9px}
 </style></head>
 <body>
 <header class="hero"><div class="brand"><div class="mascot" aria-hidden="true">🐠</div><div><div class="small">Маленькое большое приключение</div><h1>Привет, рыбка! <span>✨</span></h1><p>Твой волшебный Большой Камень</p></div></div>
@@ -85,7 +95,21 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 </header>
 <div class="map-wrap"><div id="map" aria-label="Игровая карта Большого Камня"></div><div class="map-label" id="mapLabel">🚧 Звёзды временно убраны</div><div class="float-actions"><button class="fab" id="locate" type="button" aria-label="Показать моё местоположение">📍</button><button class="fab" id="resetView" type="button" aria-label="Показать центр города">🧭</button></div></div>
 <main class="content">
-<div class="callout"><span class="ico">🚧</span><div><b>Маршрут закрыт для прогулок</b><br>Переходы через улицу Карла Маркса не проверены. Игровые звёзды убраны, GPS-сбор отключён. Не используй карту для перехода дорог.</div></div>
+<section id="exploreCity" aria-label="Исследование Большого Камня">
+<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#f7cc90">🗺️ РЕАЛЬНАЯ КАРТА · ИЗУЧАЕМ ГОРОД</div>
+<h2>Открывай Большой Камень</h2>
+<p class="muted">Выбирай интересные места на настоящей карте OpenStreetMap. Нажми название, чтобы увидеть точку. Это <b>справочник, не маршрут</b>: пешая доступность и переходы не проверены.</p>
+<div id="poiButtons">
+<button type="button" data-poi="all" class="selected">✨ Всё</button>
+<button type="button" data-poi="sights">🏛️ Памятники</button>
+<button type="button" data-poi="nature">🌳 Парки</button>
+<button type="button" data-poi="culture">🎭 Культура</button>
+</div>
+<div id="poiStatus" class="muted">Получаем сведения о городских местах с OpenStreetMap…</div>
+<div id="poiList"></div>
+<p id="poiMore">Точки взяты из открытых картографических данных и могут быть неполными. Ни один объект не требует GPS и не является заданием перейти дорогу.</p>
+<button class="primary" type="button" id="reloadPois" style="margin-top:9px">🔄 Обновить сведения о городе</button>
+</section><div class="callout"><span class="ico">🚧</span><div><b>Маршрут закрыт для прогулок</b><br>Переходы через улицу Карла Маркса не проверены. Игровые звёзды убраны, GPS-сбор отключён. Не используй карту для перехода дорог.</div></div>
 <section class="quest" id="miniGame" style="display:block;margin-top:15px;border-color:#b28adb;background:linear-gradient(135deg,#42376c,#25264d)">
 <div style="font-size:12px;letter-spacing:1px;color:#e9c6ff;font-weight:800">🎮 НОВОЕ ПРИКЛЮЧЕНИЕ</div>
 <h2 style="font-size:22px;margin:5px 0 4px">🐠 Рыбкины находки</h2>
@@ -183,7 +207,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid white;
 const $=id=>document.getElementById(id), center=[43.107826,132.34912], storageKey='fish-stars-gps-v1';
 let collected;try{collected=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(collected))collected=[]}catch(e){collected=[]}
 const stars=[]; // No collectible markers while crossings are unverified
-const map=L.map('map',{zoomControl:false}).setView(center,16);
+const map=L.map('map',{zoomControl:false}).setView(center,16);window.cityExploreMap=map;
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
 let gpsMarker=null, markers=[], userPos=null, posAccuracy=Infinity;
 // Отмечаем подтверждённую локацию работы; координаты адреса Горького, 1 из справочника.
@@ -327,6 +351,7 @@ const m=document.querySelector('.map-wrap');
 pane('city').appendChild(m);
 const notice=content.querySelector('.callout');if(notice)pane('city').appendChild(notice);
 cityItems.forEach(el=>pane('city').appendChild(el));
+const explore=document.getElementById('exploreCity');if(explore)pane('city').insertBefore(explore,pane('city').firstChild);
 if(daily)pane('home').appendChild(daily);
 if(diary)pane('home').appendChild(diary);
 if(mini)pane('games').appendChild(mini);
@@ -363,6 +388,48 @@ $('fishTap').addEventListener('click',()=>{state.touches=(Number(state.touches)|
 $('fishHug').addEventListener('click',()=>{state.mood=Math.min(3,(Number(state.mood)||0)+1);save();paint();joy('Как приятно! Рыбка улыбается ❤️','❤️')});
 $('fishFeed').addEventListener('click',()=>{const d=new Date().toLocaleDateString('en-CA');if(state.lastFed===d){joy('Сегодня Рыбка уже поела 🍤','🫧');return}state.lastFed=d;state.mood=3;save();paint();joy('Вкусно! Спасибо за угощение!','✨')});
 paint();
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id), box=$('poiList'),status=$('poiStatus');
+let pois=[],kind='all',markerLayer=null;
+const getKind=t=>t.historic==='memorial'||t.historic==='monument'||t.tourism==='attraction'?'sights':t.leisure==='park'||t.leisure==='garden'?'nature':'culture';
+const pict={sights:'🏛️',nature:'🌳',culture:'🎭'};
+const labels={sights:'Достопримечательность',nature:'Природа и отдых',culture:'Культура'};
+async function load(){
+status.textContent='Загружаем объекты города…';box.textContent='';
+const q='[out:json][timeout:20];(nwr["historic"~"^(memorial|monument)$"](around:4200,43.107826,132.34912);nwr["tourism"="attraction"](around:4200,43.107826,132.34912);nwr["leisure"~"^(park|garden)$"](around:4200,43.107826,132.34912);nwr["amenity"~"^(library|theatre|arts_centre)$"](around:4200,43.107826,132.34912);nwr["tourism"="museum"](around:4200,43.107826,132.34912););out center;';
+try{
+const response=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:q}),signal:AbortSignal.timeout?AbortSignal.timeout(26000):undefined});
+if(!response.ok)throw new Error('HTTP '+response.status);
+const result=await response.json();const seen=new Set();
+pois=(result.elements||[]).map(el=>({name:(el.tags||{}).name||'',lat:el.lat??el.center?.lat,lon:el.lon??el.center?.lon,tags:el.tags||{}})).filter(x=>x.name&&Number.isFinite(x.lat)&&Number.isFinite(x.lon)).filter(x=>{const k=x.name.toLowerCase()+'|'+x.lat.toFixed(4)+'|'+x.lon.toFixed(4);if(seen.has(k))return false;seen.add(k);return true}).slice(0,45);
+status.textContent=pois.length?'Найдено '+pois.length+' мест. Выбери, что интересно:':'В открытой базе рядом пока нет подписанных объектов этой категории.';
+render();
+}catch(e){status.textContent='Не удалось загрузить городские объекты. Карта улиц по-прежнему доступна. Нажми «Обновить сведения».';
+box.textContent='';}
+}
+function render(){
+box.textContent='';const subset=pois.filter(p=>kind==='all'||getKind(p.tags)===kind);if(markerLayer){markerLayer.clearLayers()}
+subset.forEach(p=>{
+const type=getKind(p.tags);const btn=document.createElement('button');btn.className='poiItem';btn.type='button';
+const icon=document.createElement('span');icon.style.fontSize='24px';icon.textContent=pict[type];
+const label=document.createElement('span'),name=document.createElement('strong'),sub=document.createElement('small');name.textContent=p.name;sub.textContent=labels[type]+' · показать на карте';label.append(name,sub);btn.append(icon,label);
+btn.addEventListener('click',()=>{
+if(typeof L==='undefined'||!window.cityExploreMap){status.textContent='Карта ещё не загружена';return}
+const m=window.cityExploreMap;const mark=L.circleMarker([p.lat,p.lon],{radius:10,color:'#ffe3a1',weight:3,fillColor:'#ec92b5',fillOpacity:.92});
+if(markerLayer)markerLayer.addLayer(mark);mark.bindPopup('📍 '+p.name+' — только справочная точка. Не является проверенным пешеходным маршрутом.').openPopup();
+m.setView([p.lat,p.lon],17);status.textContent='На карте: '+p.name+'. Безопасный путь к объекту не подтверждён.';
+});
+box.appendChild(btn);
+if(markerLayer&&typeof L!=='undefined'){const mark=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff1b8',weight:2,fillColor:'#b780dd',fillOpacity:.85}).bindPopup(p.name+' — объект OpenStreetMap; маршрут не проверен.');markerLayer.addLayer(mark);}
+});
+if(!subset.length&&pois.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='В выбранной категории пока нет объектов. Переключись на «Всё».';box.appendChild(empty)}
+}
+document.querySelectorAll('#poiButtons button').forEach(b=>b.addEventListener('click',()=>{kind=b.dataset.poi;document.querySelectorAll('#poiButtons button').forEach(x=>x.classList.toggle('selected',x===b));render()}));
+$('reloadPois').addEventListener('click',load);
+setTimeout(()=>{if(window.cityExploreMap&&typeof L!=='undefined')markerLayer=L.layerGroup().addTo(window.cityExploreMap);load()},450);
 })();
 </script>
 </body></html>
